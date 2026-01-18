@@ -1,0 +1,13 @@
+
+Header always unset X-Frame-Options
+Header set Content-Security-Policy "frame-ancestors 'self' https://www.hostallevante.com hostallevante.com"
+
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType application/javascript .mjs
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 0 seconds"
+</IfModule>

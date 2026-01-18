@@ -1,0 +1,7 @@
+{
+  "name": "Hostal Levante AI Assistant",
+  "description": "A sophisticated, fully functional AI customer service chatbot tailored for Hostal Levante. It features a knowledge base management system where administrators can upload or paste documentation to train the AI on specific hostel policies, local tips, and booking details.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
