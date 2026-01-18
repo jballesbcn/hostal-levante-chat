@@ -9,7 +9,7 @@ const html = htm.bind(React.createElement);
 const GREETINGS = {
   es: "¡Hola! Soy el asistente del Hostal Levante. ¿En qué puedo ayudarte hoy?",
   en: "Hi! I'm the Hostal Levante assistant. How can I help you today?",
-  ca: "Hola! Soc l'assistent de l'Hostal Levante. En què et puc ajudar avui?"
+  ca: "Hola! Soc l'assistent de l'Hostal Levante. En què et puc ajudar avvi?"
 };
 
 const QUICK_TIPS = {
@@ -17,6 +17,8 @@ const QUICK_TIPS = {
   en: ["How to get here?", "Check-in time", "Is there Wifi?", "Nearby places"],
   ca: ["Com arribar-hi?", "Horari Check-in", "Hi ha Wifi?", "Llocs propers"]
 };
+
+const BOOKING_URL = "https://booking.redforts.com/e4mh/";
 
 const askAI = async (history, knowledge, lang) => {
   const apiKey = process.env.API_KEY;
@@ -32,7 +34,7 @@ CONOCIMIENTO:
 ${knowledge.map(k => `- ${k.title}: ${k.content}`).join('\n')}
 
 REGLAS:
-1. Si preguntan por disponibilidad o precios específicos, diles que el mejor precio está en www.hostallevante.com.
+1. Si preguntan por disponibilidad o precios específicos, diles que el mejor precio y la reserva directa está en nuestra plataforma oficial: ${BOOKING_URL}.
 2. Sé honesto sobre la accesibilidad (no adaptado).
 3. Recomienda lugares del Barrio Gótico si preguntan por turismo.
 4. No inventes servicios (no hay desayuno, no hay cocina, no hay TV).`;
@@ -114,11 +116,11 @@ const ChatWidget = ({ knowledge, isEmbedded }) => {
           <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center"><i className="fas fa-hotel text-sm"></i></div>
           <div>
             <div className="font-bold text-sm leading-none">Hostal Levante</div>
-            <div className="text-[9px] text-blue-200 mt-1 uppercase tracking-widest font-bold">Online Assistant</div>
+            <div className="text-[9px] text-blue-200 mt-1 uppercase tracking-widest font-bold">Asistente Online</div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <a href="https://www.hostallevante.com" target="_blank" className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded-md border border-white/20 transition-all">RESERVAR</a>
+          <a href=${BOOKING_URL} target="_blank" className="text-[10px] bg-white text-blue-900 font-bold px-3 py-1.5 rounded-lg shadow-lg hover:bg-blue-50 transition-all uppercase">RESERVAR</a>
           <button onClick=${() => toggleChat(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10"><i className="fas fa-times"></i></button>
         </div>
       </div>
@@ -154,7 +156,7 @@ const ChatWidget = ({ knowledge, isEmbedded }) => {
             placeholder="Escribe tu pregunta..." 
             className="flex-1 bg-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" 
           />
-          <button onClick=${onSend} className="bg-[#1e3a8a] hover:bg-blue-800 text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-lg shadow-blue-900/10">
+          <button onClick=${onSend} className="bg-[#1e3a8a] hover:bg-blue-800 text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-lg">
             <i className="fas fa-paper-plane text-xs"></i>
           </button>
         </div>
@@ -166,7 +168,7 @@ const ChatWidget = ({ knowledge, isEmbedded }) => {
 const App = () => {
   const [isAdmin, setIsAdmin] = useState(true);
   const [knowledge, setKnowledge] = useState(() => {
-    const s = localStorage.getItem('lev_v23_kb'); // Nueva versión para incluir tips locales
+    const s = localStorage.getItem('lev_v23_kb');
     if (s) return JSON.parse(s);
     
     return [
