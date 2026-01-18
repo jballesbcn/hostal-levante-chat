@@ -13,7 +13,6 @@ const GREETINGS = {
 };
 
 const askAI = async (history, knowledge, lang) => {
-  // Verificación estricta de la API KEY
   const apiKey = process.env.API_KEY;
   
   if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
@@ -23,14 +22,18 @@ const askAI = async (history, knowledge, lang) => {
   try {
     const ai = new GoogleGenAI({ apiKey });
     const systemInstruction = `Eres el asistente virtual oficial del Hostal Levante, ubicado en el centro de Barcelona (Baixada de Sant Miquel, 2).
-Tu objetivo es ayudar a los huéspedes con información sobre el hostal y la ciudad.
+Tu objetivo es ayudar a los huéspedes con información precisa basada en el conocimiento proporcionado.
 Idioma de respuesta: ${lang}.
-Conocimiento actual: ${knowledge.map(k => `${k.title}: ${k.content}`).join('. ')}
-Directrices: 
-- Sé siempre amable, profesional y servicial.
-- Responde de forma concisa (máximo 3 frases).
-- Si no tienes la información exacta sobre una reserva o precio específico, pide que contacten a info@hostallevante.com o llamen al +34 933 17 95 65.
-- No inventes servicios que no estén en el conocimiento actual.`;
+
+CONOCIMIENTO DEL HOSTAL:
+${knowledge.map(k => `- ${k.title}: ${k.content}`).join('\n')}
+
+DIRECTRICES CRÍTICAS:
+- ACCESIBILIDAD: Sé muy claro en que el hostal NO está adaptado para movilidad reducida (hay escaleras y el ascensor es pequeño).
+- SERVICIOS: No hay TV, no hay cocina, no hay desayuno. Sí hay Wifi gratis, toallas y sábanas incluidas.
+- PAGOS: Explica bien la diferencia entre tarifa No Reembolsable y Solo Alojamiento.
+- TONO: Amable, profesional y conciso (máximo 3 frases).
+- CONTACTO: Si no tienes la respuesta exacta o es un tema de reserva personal, remite a info@hostallevante.com o al +34 933 17 95 65.`;
 
     const contents = history
       .filter(m => !m.isGreeting && m.text && !m.isError)
@@ -44,8 +47,8 @@ Directrices:
       contents: contents,
       config: { 
         systemInstruction, 
-        temperature: 0.7,
-        maxOutputTokens: 500
+        temperature: 0.5,
+        maxOutputTokens: 600
       }
     });
     
@@ -97,7 +100,7 @@ const ChatWidget = ({ knowledge, isEmbedded }) => {
     } catch (err) {
       let errorMsg = "Lo siento, ha habido un problema de conexión. Por favor, inténtalo de nuevo más tarde.";
       if (err.message === "API_KEY_INVALID") {
-        errorMsg = "Configuración incompleta: La API_KEY no es válida o no se ha propagado en Vercel todavía. (Recuerda hacer 'Redeploy' en Vercel).";
+        errorMsg = "Configuración incompleta: La API_KEY no es válida en Vercel.";
       }
       setMessages(prev => [...prev, { role: 'model', text: errorMsg, isError: true }]);
     } finally { 
@@ -159,15 +162,25 @@ const ChatWidget = ({ knowledge, isEmbedded }) => {
 const App = () => {
   const [isAdmin, setIsAdmin] = useState(true);
   const [knowledge, setKnowledge] = useState(() => {
-    const s = localStorage.getItem('lev_v20_kb');
-    return s ? JSON.parse(s) : [
-      { id: 1, title: 'Horario Check-in', content: 'La entrada oficial es a partir de las 14:00h, pero si llegas antes puedes dejar las maletas.' },
-      { id: 2, title: 'Ubicación Exacta', content: 'Estamos en Calle Baixada de Sant Miquel 2, justo detrás de la Plaza Sant Jaume.' },
-      { id: 3, title: 'Desayuno', content: 'No ofrecemos servicio de desayuno, pero hay cafeterías excelentes a menos de 1 minuto caminando.' }
+    const s = localStorage.getItem('lev_v21_kb');
+    if (s) return JSON.parse(s);
+    
+    // Información optimizada del PDF como predeterminada
+    return [
+      { id: 1, title: 'Check-in y Consigna', content: 'El check-in es a partir de las 15:00h. Si llegas antes de esa hora, puedes dejar tu equipaje en nuestra consigna de forma gratuita mientras preparas tu habitación.' },
+      { id: 2, title: 'Recepción y Horarios', content: 'Nuestra recepción está abierta las 24 horas del día. Siempre hay personal disponible para recibirte, independientemente de la hora de tu llegada.' },
+      { id: 3, title: 'Pagos y Reservas', content: 'Tarifa No Reembolsable: Se cobra el total al reservar. Tarifa Solo Alojamiento: Se cobra una noche como depósito 3 días antes de la llegada y el resto en el hostal (tarjeta o efectivo). La tasa turística siempre se paga al llegar.' },
+      { id: 4, title: 'Check-out', content: 'La hora límite de salida es a las 11:00h. Ofrecemos servicio de consigna para tus maletas después de salir, pero no disponemos de servicio de late check-out.' },
+      { id: 5, title: 'Cómo llegar', content: 'Desde el Aeropuerto: Aerobús hasta Plaza Catalunya y luego Metro L3 (Liceu) o andando. Desde Sants: Metro L3 directo hasta Liceu. También puedes llegar fácilmente en Taxi o Uber.' },
+      { id: 6, title: 'Accesibilidad', content: 'El hostal NO está adaptado para personas con movilidad reducida. Hay escaleras, y el ascensor es de uso compartido y pequeño (no cabe una silla de ruedas sin plegar).' },
+      { id: 7, title: 'Servicios en Habitación', content: 'Ofrecemos Wifi gratuito en todo el hostal. Las sábanas y toallas están incluidas en el precio. No disponemos de televisión en las habitaciones ni de habitaciones familiares/conectadas.' },
+      { id: 8, title: 'Comidas y Cocina', content: 'No ofrecemos servicio de desayuno ni comidas. Tampoco disponemos de cocina o microondas para uso de los clientes, pero estamos rodeados de excelentes cafeterías.' },
+      { id: 9, title: 'Nevera para Medicinas', content: 'Disponemos de una pequeña nevera en el office de recepción exclusivamente para que los clientes puedan guardar medicinas que requieran refrigeración.' },
+      { id: 10, title: 'Traslados', content: 'Podemos gestionar un taxi al aeropuerto con precio no fijo. No tenemos transfer propio a las terminales de crucero, pero hay paradas de taxi y servicio Uber muy cerca.' }
     ];
   });
 
-  useEffect(() => localStorage.setItem('lev_v20_kb', JSON.stringify(knowledge)), [knowledge]);
+  useEffect(() => localStorage.setItem('lev_v21_kb', JSON.stringify(knowledge)), [knowledge]);
   if (window.location.search.includes('embed=true')) return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} />`;
 
   return html`
@@ -193,7 +206,7 @@ const App = () => {
           ${isAdmin ? html`
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="font-bold text-slate-700">Base de Conocimientos</h3>
+                <h3 className="font-bold text-slate-700">Base de Conocimientos (Datos del PDF)</h3>
                 <button onClick=${() => setKnowledge([{id:Date.now(), title:'', content:''}, ...knowledge])} className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all border border-blue-100">
                   <i className="fas fa-plus mr-2"></i>Añadir Dato
                 </button>
@@ -201,8 +214,8 @@ const App = () => {
               <div className="grid gap-4">
                 ${knowledge.map(k => html`
                   <div key=${k.id} className="group flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 transition-colors">
-                    <input className="bg-transparent border-none p-2 font-bold text-slate-800 placeholder:text-slate-300 outline-none w-full md:w-1/3" placeholder="Título (ej: Mascotas)" value=${k.title} onChange=${e => setKnowledge(knowledge.map(x => x.id === k.id ? {...x, title: e.target.value} : x))} />
-                    <textarea className="bg-transparent border-none p-2 text-slate-600 placeholder:text-slate-300 outline-none w-full md:flex-1 resize-none" rows="1" placeholder="Contenido (ej: No se admiten mascotas)" value=${k.content} onChange=${e => setKnowledge(knowledge.map(x => x.id === k.id ? {...x, content: e.target.value} : x))} />
+                    <input className="bg-transparent border-none p-2 font-bold text-slate-800 placeholder:text-slate-300 outline-none w-full md:w-1/3" placeholder="Título" value=${k.title} onChange=${e => setKnowledge(knowledge.map(x => x.id === k.id ? {...x, title: e.target.value} : x))} />
+                    <textarea className="bg-transparent border-none p-2 text-slate-600 placeholder:text-slate-300 outline-none w-full md:flex-1 resize-none" rows="2" placeholder="Contenido" value=${k.content} onChange=${e => setKnowledge(knowledge.map(x => x.id === k.id ? {...x, content: e.target.value} : x))} />
                     <button onClick=${() => setKnowledge(knowledge.filter(x => x.id !== k.id))} className="text-slate-300 hover:text-red-500 transition-colors self-center p-2">
                       <i className="fas fa-trash-alt"></i>
                     </button>
@@ -216,14 +229,14 @@ const App = () => {
                  <i className="fas fa-eye text-3xl"></i>
                </div>
                <h2 className="text-xl font-bold text-slate-800">Modo Previsualización</h2>
-               <p className="text-slate-500 max-w-sm mx-auto mt-2">Haz clic en el botón azul flotante de la derecha para probar cómo verán el chat tus clientes.</p>
+               <p className="text-slate-500 max-w-sm mx-auto mt-2">Prueba el chat con los nuevos datos cargados. El botón azul aparecerá abajo a la derecha.</p>
              </div>
           `}
         </div>
       </div>
       
       <footer className="mt-8 text-center text-slate-400 text-xs">
-        <p>© 2024 Hostal Levante Barcelona • Sistema de Inteligencia Artificial</p>
+        <p>© 2024 Hostal Levante Barcelona • Base de datos actualizada v2.1</p>
       </footer>
 
       <${ChatWidget} knowledge=${knowledge} isEmbedded=${false} />
