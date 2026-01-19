@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import htm from 'htm';
 import { ChatWidget } from './chat.js';
 import { BookingForm } from './booking.js';
+import { ContactForm } from './contact.js';
 
 const html = htm.bind(React.createElement);
 
@@ -25,9 +26,6 @@ const AdminPanel = ({ knowledge }) => {
              <div className="text-slate-400 text-xs uppercase tracking-wider font-bold italic">En preparación</div>
            </div>
         </div>
-        <div className="bg-slate-100 p-4 rounded-2xl text-xs text-slate-500 italic">
-          Aquí puedes previsualizar cómo verán los clientes el asistente en la web.
-        </div>
       </div>
       
       <div className="relative h-[600px] border rounded-[2rem] overflow-hidden shadow-inner bg-slate-200/50">
@@ -41,20 +39,17 @@ const App = () => {
   const [knowledge] = useState([
     { title: 'Hostal Levante', content: 'Ubicado en Baixada de Sant Miquel 2, Barcelona. Cerca de Las Ramblas y la Catedral.' },
     { title: 'Check-in', content: 'A partir de las 14:00h. Recepción 24 horas.' },
-    { title: 'Wifi', content: 'Gratis en todo el establecimiento.' }
+    { title: 'Wifi', content: 'Gratis en todo el establecimiento.' },
+    { title: 'Clima', content: 'Habitaciones con aire acondicionado y calefacción.' }
   ]);
   
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
   const isEmbed = params.get('embed') === 'true';
 
-  if (view === 'booking') {
-    return html`<${BookingForm} />`;
-  }
-  
-  if (isEmbed) {
-    return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} />`;
-  }
+  if (view === 'booking') return html`<${BookingForm} />`;
+  if (view === 'contact') return html`<${ContactForm} />`;
+  if (isEmbed) return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} />`;
   
   return html`<${AdminPanel} knowledge=${knowledge} />`;
 };
