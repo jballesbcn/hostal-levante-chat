@@ -22,8 +22,8 @@ const AdminPanel = ({ knowledge }) => {
              <div className="text-blue-600/70 text-xs uppercase tracking-wider font-bold">Activo</div>
            </div>
            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-             <div className="font-bold text-slate-800 text-base mb-1">Módulo Reservas</div>
-             <div className="text-slate-400 text-xs uppercase tracking-wider font-bold italic">En preparación</div>
+             <div className="font-bold text-slate-800 text-base mb-1">Módulos Web</div>
+             <div className="text-slate-400 text-xs uppercase tracking-wider font-bold italic">Chat + Reservas + Contacto</div>
            </div>
         </div>
       </div>
@@ -40,7 +40,7 @@ const App = () => {
     { title: 'Hostal Levante', content: 'Ubicado en Baixada de Sant Miquel 2, Barcelona. Cerca de Las Ramblas y la Catedral.' },
     { title: 'Check-in', content: 'A partir de las 14:00h. Recepción 24 horas.' },
     { title: 'Wifi', content: 'Gratis en todo el establecimiento.' },
-    { title: 'Clima', content: 'Habitaciones con aire acondicionado y calefacción.' }
+    { title: 'Habitaciones', content: 'Con aire acondicionado, calefacción y baño privado.' }
   ]);
   
   const params = new URLSearchParams(window.location.search);

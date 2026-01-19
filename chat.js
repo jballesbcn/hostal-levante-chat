@@ -6,8 +6,8 @@ import { GoogleGenAI } from "@google/genai";
 const html = htm.bind(React.createElement);
 
 const UI_TEXT = {
-  es: { book: "Reservar", write: "Escribe tu duda...", greeting: "¡Hola! Soy el asistente de Hostal Levante. ¿En qué puedo ayudarte?", error: "Lo siento, hubo un problema de conexión. Inténtalo de nuevo." },
-  en: { book: "Book", write: "Type your question...", greeting: "Hi! I'm the Hostal Levante assistant. How can I help you?", error: "Sorry, there was a connection issue. Please try again." }
+  es: { book: "Reservar", write: "Escribe tu duda...", greeting: "¡Hola! Soy el asistente de Hostal Levante. ¿En qué puedo ayudarte?", error: "Problema de conexión. Por favor, revisa tu API KEY o inténtalo en unos minutos." },
+  en: { book: "Book", write: "Type your question...", greeting: "Hi! I'm the Hostal Levante assistant. How can I help you?", error: "Connection issue. Please check your API KEY or try again in a few minutes." }
 };
 
 export const ChatWidget = ({ knowledge, isEmbedded }) => {
@@ -36,23 +36,29 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     setIsTyping(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const kb = knowledge.map(k => `${k.title}: ${k.content}`).join('\n');
+      const apiKey = process.env.API_KEY;
+      if (!apiKey || apiKey === 'undefined' || apiKey.length < 10) {
+          throw new Error("API Key no configurada correctamente");
+      }
+
+      const ai = new GoogleGenAI({ apiKey: apiKey });
+      const kbContent = knowledge.map(k => `${k.title}: ${k.content}`).join('\n');
       
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Eres el asistente oficial del Hostal Levante. Responde en ${lang}. 
-        Usa esta información para responder:
-        ${kb}
-        
-        Pregunta del cliente: ${userText}`,
-        config: { temperature: 0.7 }
+        contents: userText,
+        config: { 
+            temperature: 0.7,
+            systemInstruction: `Eres el asistente oficial del Hostal Levante en Barcelona. Responde de forma amable y concisa en idioma: ${lang}. 
+            Utiliza estrictamente esta información:
+            ${kbContent}`
+        }
       });
 
-      if (!response.text) throw new Error("No response text");
+      if (!response.text) throw new Error("Respuesta vacía del servidor");
       setMessages(prev => [...prev, { role: 'model', text: response.text }]);
     } catch (err) {
-      console.error("Chat Error:", err);
+      console.error("Gemini Error Details:", err);
       setMessages(prev => [...prev, { role: 'model', text: t.error }]);
     } finally {
       setIsTyping(false);
@@ -77,7 +83,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       <div className="bg-[#1e3a8a] p-5 text-white flex justify-between items-center rounded-t-[2rem]">
         <div>
           <div className="font-bold text-sm leading-tight">Hostal Levante</div>
-          <div className="text-[10px] opacity-70">Asistente Virtual</div>
+          <div className="text-[10px] opacity-70 italic tracking-wide">Asistente Virtual Activo</div>
         </div>
         <div className="flex items-center gap-2">
            <button onClick=${() => window.open('https://www.hostallevante.com/reserva', '_blank')} className="bg-white text-[#1e3a8a] px-3 py-1 rounded-full text-[10px] font-bold">
@@ -98,16 +104,16 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
           </div>
         `)}
         ${isTyping && html`
-          <div className="flex gap-1 p-2 bg-white rounded-xl border w-fit animate-pulse">
-            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
-            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
-            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
+          <div className="flex gap-1 p-2 bg-white rounded-xl border w-fit ml-2">
+            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce"></div>
+            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce [animation-delay:0.2s]"></div>
+            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce [animation-delay:0.4s]"></div>
           </div>
         `}
       </div>
 
       <div className="p-4 bg-white border-t rounded-b-[2rem]">
-        <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl items-center">
+        <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl items-center border border-slate-200 focus-within:border-[#1e3a8a] transition-colors">
           <input 
             value=${input} 
             onChange=${e => setInput(e.target.value)} 
@@ -116,7 +122,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
             className="flex-1 bg-transparent text-sm px-3 py-2 outline-none"
             disabled=${isTyping}
           />
-          <button onClick=${onSend} disabled=${isTyping || !input.trim()} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-50 transition-all">
+          <button onClick=${onSend} disabled=${isTyping || !input.trim()} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-30 transition-all active:scale-95">
             <i className="fas fa-paper-plane"></i>
           </button>
         </div>
