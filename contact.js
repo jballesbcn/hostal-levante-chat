@@ -9,7 +9,8 @@ const TEXTS = {
     title: "Contacto", subtitle: "Estamos aquí para ayudarte. Envíanos tu consulta.",
     name: "Nombre", email: "Email", whatsapp: "WhatsApp (opcional)", message: "Mensaje",
     send: "Enviar Mensaje", sending: "Enviando...",
-    success: "¡Mensaje enviado!", successSub: "Hemos recibido tu consulta. Te responderemos muy pronto a contactoweb@hostallevante.com",
+    success: "¡Mensaje enviado!", successSub: "Hemos recibido tu consulta. Te responderemos muy pronto.",
+    redirect: "Redirigiendo al inicio en ",
     error: "Error al enviar. Por favor, contacta directamente con nosotros.",
     captcha: "Por favor, verifica que no eres un robot."
   },
@@ -18,6 +19,7 @@ const TEXTS = {
     name: "Name", email: "Email", whatsapp: "WhatsApp (optional)", message: "Message",
     send: "Send Message", sending: "Sending...",
     success: "Message sent!", successSub: "We have received your inquiry. We will reply shortly.",
+    redirect: "Redirecting to home in ",
     error: "Error sending. Please try contacting us directly.",
     captcha: "Please verify that you are not a robot."
   },
@@ -26,6 +28,7 @@ const TEXTS = {
     name: "Nom", email: "Email", whatsapp: "WhatsApp (opcional)", message: "Missatge",
     send: "Enviar Missatge", sending: "Enviant...",
     success: "Missatge enviat!", successSub: "Hem rebut la teva consulta. Et respondrem ben aviat.",
+    redirect: "Redirigint a l'inici en ",
     error: "Error en enviar. Torna-ho a intentar o contacta per telèfon.",
     captcha: "Per favor, verifica que no ets un robot."
   },
@@ -34,6 +37,7 @@ const TEXTS = {
     name: "Nom", email: "Email", whatsapp: "WhatsApp (facultatif)", message: "Message",
     send: "Envoyer", sending: "Envoi...",
     success: "Message envoyé !", successSub: "Nous vous répondrons dans les plus brefs délais.",
+    redirect: "Redirection vers l'accueil dans ",
     error: "Erreur d'envoi.",
     captcha: "Veuillez vérifier que vous n'êtes pas un robot."
   },
@@ -42,6 +46,7 @@ const TEXTS = {
     name: "Nome", email: "Email", whatsapp: "WhatsApp (opzionale)", message: "Messaggio",
     send: "Invia", sending: "Invio...",
     success: "Messaggio inviato!", successSub: "Ti risponderemo al più presto.",
+    redirect: "Reindirizzamento alla home in ",
     error: "Errore di invio.",
     captcha: "Per favor, verifica di no essere un robot."
   },
@@ -50,6 +55,7 @@ const TEXTS = {
     name: "Name", email: "E-Mail", whatsapp: "WhatsApp (optional)", message: "Nachricht",
     send: "Absenden", sending: "Wird gesendet...",
     success: "Nachricht gesendet!", successSub: "Wir werden uns in Kürze bei Ihnen melden.",
+    redirect: "Weiterleitung zur Startseite in ",
     error: "Fehler beim Senden.",
     captcha: "Bitte bestätigen Sie, dass Sie kein Roboter sind."
   },
@@ -58,6 +64,7 @@ const TEXTS = {
     name: "Naam", email: "E-mail", whatsapp: "WhatsApp (optioneel)", message: "Bericht",
     send: "Versturen", sending: "Verzenden...",
     success: "Bericht verzonden!", successSub: "We nemen zo snel mogelijk contact met u op.",
+    redirect: "Doorsturen naar home in ",
     error: "Fout bij verzenden.",
     captcha: "Bevestig dat u geen robot bent."
   },
@@ -66,14 +73,16 @@ const TEXTS = {
     name: "Nome", email: "E-mail", whatsapp: "WhatsApp (opcional)", message: "Mensagem",
     send: "Enviar", sending: "A enviar...",
     success: "Mensagem enviada!", successSub: "Responderemos o más breve posible.",
+    redirect: "Redirecionando para o início em ",
     error: "Erro ao enviar.",
-    captcha: "Por favor, verifique que não é um robô."
+    captcha: "Por favor, verifique que não é un robô."
   }
 };
 
 export const ContactForm = () => {
   const [formData, setFormData] = useState({ name: '', email: '', whatsapp: '', message: '' });
   const [status, setStatus] = useState('idle'); 
+  const [countdown, setCountdown] = useState(5);
   const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
   const t = TEXTS[lang] || TEXTS.es;
 
@@ -84,6 +93,18 @@ export const ContactForm = () => {
       });
     }
   }, []);
+
+  // Efecto para la redirección automática
+  useEffect(() => {
+    let timer;
+    if (status === 'success' && countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (status === 'success' && countdown === 0) {
+      // Redirigir a la home oficial
+      window.top.location.href = "https://www.hostallevante.com/";
+    }
+    return () => clearTimeout(timer);
+  }, [status, countdown]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -97,8 +118,6 @@ export const ContactForm = () => {
     setStatus('sending');
     
     try {
-      // LLAMADA REAL AL SERVIDOR PHP
-      // Reemplaza esta URL con la ruta absoluta donde subas el archivo PHP
       const response = await fetch('https://www.hostallevante.com/send_email.php', {
         method: 'POST',
         headers: {
@@ -128,10 +147,20 @@ export const ContactForm = () => {
             <i className="fas fa-check text-2xl"></i>
           </div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">${t.success}</h2>
-          <p className="text-slate-500 text-xs max-w-[250px] mx-auto">${t.successSub}</p>
-          <button onClick=${() => window.location.reload()} className="mt-6 text-[#1e3a8a] text-xs font-bold hover:underline">
-            ${lang === 'es' ? 'Enviar otro mensaje' : 'Send another message'}
-          </button>
+          <p className="text-slate-500 text-xs max-w-[250px] mx-auto mb-6">${t.successSub}</p>
+          
+          <div className="bg-slate-50 rounded-full px-4 py-2 inline-flex items-center gap-2 border border-slate-100">
+             <div className="w-4 h-4 border-2 border-[#1e3a8a] border-t-transparent rounded-full animate-spin"></div>
+             <span className="text-[10px] font-bold text-[#1e3a8a] uppercase tracking-wider">
+               ${t.redirect} ${countdown}s
+             </span>
+          </div>
+
+          <div className="mt-8">
+            <button onClick=${() => window.top.location.href = "https://www.hostallevante.com/"} className="text-[#1e3a8a] text-xs font-bold hover:underline">
+              ${lang === 'es' ? 'Volver ahora' : 'Go back now'}
+            </button>
+          </div>
         </div>
       </div>
     `;
