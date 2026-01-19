@@ -42,10 +42,10 @@ const ChatWidget = ({ knowledge, isStandaloneWidget = false }) => {
   const scrollRef = useRef(null);
   const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
 
-  // Notificar al padre (tu web) el cambio de tamaño
+  // Notificar al padre (tu web) el cambio de tamaño usando window.top para mayor compatibilidad
   useEffect(() => {
     if (isStandaloneWidget) {
-      window.parent.postMessage({ type: 'LEVANTE_CHAT_STATE', isOpen }, '*');
+      window.top.postMessage({ type: 'LEVANTE_CHAT_STATE', isOpen }, '*');
     }
   }, [isOpen, isStandaloneWidget]);
 
@@ -65,7 +65,7 @@ const ChatWidget = ({ knowledge, isStandaloneWidget = false }) => {
   };
 
   const containerClass = isStandaloneWidget 
-    ? "h-full w-full flex flex-col items-end justify-end p-4 overflow-hidden" 
+    ? "h-full w-full flex flex-col items-end justify-end p-2 overflow-hidden" 
     : "fixed bottom-6 right-6 z-[9999] flex flex-col items-end";
 
   return html`
