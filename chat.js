@@ -12,8 +12,8 @@ const GREETINGS = {
   de: "Hallo! Ich bin der Levante-Assistent. Wie kann ich helfen?",
   it: "Ciao! Sono l'assistente del Hostal Levante. Come posso aiutarti?",
   fr: "Bonjour ! Je suis l'assistant de l'Hostal Levante. Comment puis-je vous aider ?",
-  nl: "Hallo! Hoe kan ik u helpen?",
-  pt: "Olá! Como posso ayudá-lo?"
+  nl: "Hallo! Hoe kan ik u helfen?",
+  pt: "Olá! Como posso ajudá-lo?"
 };
 
 const QUICK_TIPS = {
@@ -46,48 +46,29 @@ const FormattedMessage = ({ text }) => {
 };
 
 const askAI = async (history, knowledge, lang) => {
-  // Uso DIRECTO de process.env.API_KEY tal como exige la guía para asegurar la inyección
+  // Inicialización directa según directrices
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const knowledgeStr = knowledge.map(k => `${k.title}: ${k.content}`).join(' | ');
   const systemInstruction = `Eres el asistente oficial del Hostal Levante en Barcelona. Idioma: ${lang}. 
-Eres amable y servicial. 
-NORMAS: 
-- Respuestas breves (máx 2 párrafos).
-- Usa **negritas** para datos clave.
-- Conocimiento: ${knowledgeStr}`;
+Eres amable y servicial. Respuestas breves (máx 2 párrafos). Usa **negritas**.
+Conocimiento: ${knowledgeStr}`;
 
+  // Filtro de historial para cumplir esquema exacto del API
   const contents = [];
   let lastRole = null;
-
   for (const msg of history) {
     const role = msg.role === 'user' ? 'user' : 'model';
     if (contents.length === 0 && role === 'model') continue;
     if (role === lastRole) continue;
-    
-    contents.push({
-      role: role,
-      parts: [{ text: msg.text }]
-    });
+    contents.push({ role, parts: [{ text: msg.text }] });
     lastRole = role;
-  }
-
-  if (contents.length === 0) {
-    const lastUserMsg = [...history].reverse().find(m => m.role === 'user');
-    if (lastUserMsg) {
-      contents.push({ role: 'user', parts: [{ text: lastUserMsg.text }] });
-    } else {
-      throw new Error("No hay mensajes");
-    }
   }
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: contents,
-    config: {
-      systemInstruction,
-      temperature: 0.7,
-    }
+    config: { systemInstruction, temperature: 0.7 }
   });
 
   return response.text;
@@ -108,9 +89,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
 
   const toggleChat = (state) => {
     setIsOpen(state);
-    if (isEmbedded) {
-        window.parent.postMessage({ type: 'chatbot_state', open: state }, '*');
-    }
+    if (isEmbedded) window.parent.postMessage({ type: 'chatbot_state', open: state }, '*');
   };
 
   useEffect(() => {
@@ -121,19 +100,16 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     const text = typeof customText === 'string' ? customText : input;
     if (!text.trim() || isTyping) return;
 
-    const userMsg = { role: 'user', text };
-    const newMsgs = [...messages, userMsg];
-    
-    setMessages(newMsgs);
+    setMessages(prev => [...prev, { role: 'user', text }]);
     setInput('');
     setIsTyping(true);
 
     try {
-      const reply = await askAI(newMsgs, knowledge, lang);
+      const reply = await askAI([...messages, { role: 'user', text }], knowledge, lang);
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
-      console.error("Gemini Error:", err);
-      setMessages(prev => [...prev, { role: 'model', text: `${t.error}. Por favor, contacta con nosotros directamente si el problema persiste.` }]);
+      console.error("Chat error:", err);
+      setMessages(prev => [...prev, { role: 'model', text: `${t.error}. Inténtalo de nuevo más tarde.` }]);
     } finally {
       setIsTyping(false);
     }

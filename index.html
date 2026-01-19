@@ -7,7 +7,6 @@
     <title>Levante Contact</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Carga de reCAPTCHA v2 -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body { margin: 0; padding: 0; background: transparent !important; font-family: sans-serif; overflow: hidden; }
@@ -20,8 +19,8 @@
         @media (max-width: 400px) { .g-recaptcha { transform: scale(0.7); } }
     </style>
     <script>
-        // Definición global de process para compatibilidad con el SDK en el navegador
-        window.process = window.process || { env: {} };
+        // Este bloque asegura que process.env.API_KEY no rompa el código en el navegador
+        window.process = window.process || { env: { API_KEY: undefined } };
     </script>
     <script type="importmap">
 {
