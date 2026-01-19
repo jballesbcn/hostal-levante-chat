@@ -7,22 +7,24 @@ const html = htm.bind(React.createElement);
 
 const UI_TEXT = {
   es: { 
-    book: "Reservar", 
+    book: "Reserva", 
     contact: "Contacto",
     write: "Escribe tu duda...", 
     greeting: "¡Hola! Soy el asistente de Hostal Levante. ¿En qué puedo ayudarte?", 
     error: "Servicio temporalmente no disponible.",
-    suggestions: ["¿Cómo llegar?", "¿Horario check-in?", "¿Tienen Wifi?", "Contacto"]
+    suggestions: ["¿Cómo llegar?", "¿Horario check-in?", "Reservar habitación", "Contacto"]
   },
   en: { 
-    book: "Book", 
+    book: "Book Now", 
     contact: "Contact",
     write: "Type your question...", 
     greeting: "Hi! I'm the Hostal Levante assistant. How can I help you?", 
     error: "Service temporarily unavailable.",
-    suggestions: ["How to get here?", "Check-in time?", "Do you have Wifi?", "Contact"]
+    suggestions: ["How to get here?", "Check-in time?", "Book a room", "Contact"]
   }
 };
+
+const BOOKING_URL = "https://booking.redforts.com/e4mh/";
 
 export const ChatWidget = ({ knowledge, isEmbedded }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,12 +48,28 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     }
   }, [messages, isTyping]);
 
+  const goToBooking = () => {
+    window.open(BOOKING_URL, '_blank');
+  };
+
+  const goToContact = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'contact');
+    window.location.href = url.toString();
+  };
+
   const onSend = async (textOverride) => {
     const textToSend = textOverride || input;
     if (!textToSend.trim() || isTyping) return;
     
-    // Si el usuario hace clic en "Contacto" en las sugerencias
-    if (textToSend.toLowerCase().includes('contacto') || textToSend.toLowerCase().includes('contact')) {
+    const lowerText = textToSend.toLowerCase();
+
+    // Lógica de redirección por palabras clave
+    if (lowerText.includes('reservar') || lowerText.includes('book')) {
+        goToBooking();
+        return;
+    }
+    if (lowerText.includes('contacto') || lowerText.includes('contact')) {
         goToContact();
         return;
     }
@@ -72,7 +90,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
             systemInstruction: `Eres el asistente oficial del Hostal Levante en Barcelona. 
             Responde de forma amable, servicial y concisa. 
             Utiliza emojis de forma moderada para ser amigable.
-            Si el usuario pregunta por contacto, invítale a usar el botón de contacto.
+            Si el usuario quiere reservar, menciónale que puede usar el botón de "Reserva" arriba a la derecha.
             Información del Hostal:
             ${kbContent}`
         }
@@ -86,12 +104,6 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     } finally {
       setIsTyping(false);
     }
-  };
-
-  const goToContact = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('view', 'contact');
-    window.location.href = url.toString();
   };
 
   const toggleChat = (state) => {
@@ -126,8 +138,8 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
           </div>
         </div>
         <div className="flex items-center gap-2 relative z-10">
-          <button onClick=${goToContact} className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all border border-white/10">
-            ${t.contact}
+          <button onClick=${goToBooking} className="bg-white text-[#1e3a8a] hover:bg-blue-50 px-4 py-2 rounded-xl text-[11px] font-black uppercase transition-all shadow-lg shadow-blue-900/20 active:scale-95 border border-white">
+            <i className="fas fa-calendar-check mr-2"></i> ${t.book}
           </button>
           <button onClick=${() => toggleChat(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
             <i className="fas fa-times text-xs"></i>
