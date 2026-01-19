@@ -7,32 +7,32 @@ try {
   const distDir = path.join(__dirname, 'dist');
   if (!fs.existsSync(distDir)) fs.mkdirSync(distDir);
 
-  // Lista de archivos modulares a procesar
-  const files = ['main.js', 'chat.js', 'contact.js'];
+  // Lista de archivos modulares de la "Estructura del Café"
+  const files = ['main.js', 'chat.js', 'booking.js', 'contact.js'];
 
   files.forEach(file => {
     const filePath = path.join(__dirname, file);
     if (fs.existsSync(filePath)) {
       let content = fs.readFileSync(filePath, 'utf8');
-      // Inyectar API KEY real en el código
+      // Inyectar API KEY
       const replacedContent = content.replace(/process\.env\.API_KEY/g, `'${apiKey}'`);
       fs.writeFileSync(path.join(distDir, file), replacedContent);
-      console.log(`✅ ${file} procesado e inyectado.`);
+      console.log(`✅ ${file} procesado.`);
     }
   });
   
-  // Copiar archivos estáticos necesarios
+  // Copiar estáticos
   const staticFiles = ['index.html', 'metadata.json', 'vercel.json', '.htaccess'];
   staticFiles.forEach(file => {
     const src = path.join(__dirname, file);
     if (fs.existsSync(src)) {
       fs.copyFileSync(src, path.join(distDir, file));
-      console.log(`📄 ${file} copiado a dist.`);
+      console.log(`📄 ${file} copiado.`);
     }
   });
 
-  console.log('🚀 Restauración modular completada con éxito.');
+  console.log('🚀 Build Finalizado: Estructura Original Restaurada.');
 } catch (error) {
-  console.error('❌ Error durante el build:', error);
+  console.error('❌ Error en el build:', error);
   process.exit(1);
 }
