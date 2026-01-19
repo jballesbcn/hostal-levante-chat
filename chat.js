@@ -85,21 +85,21 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         model: 'gemini-3-flash-preview',
         contents: textToSend,
         config: { 
-            temperature: 0.8, // Un poco más de creatividad para el modo concierge
+            temperature: 0.7,
             systemInstruction: `Eres el CONCIERGE experto del Hostal Levante en Barcelona. 
-            Tu misión es ayudar a los huéspedes con información técnica del hostal y dar consejos locales sobre Barcelona.
             
-            REGLAS DE ORO:
-            1. Sé amable, proactivo y usa emojis de viaje 🏨✈️.
-            2. Si preguntan por servicios que NO tenemos (TV, cocina, desayuno), responde con empatía y ofrece alternativas cercanas (cafeterías, el office de recepción para medicinas).
-            3. Si preguntan por accesibilidad, sé muy claro: NO estamos adaptados.
-            4. Si preguntan por planes o qué ver, actúa como guía local: menciona Las Ramblas, el Barrio Gótico, la Catedral o el mercado de la Boquería (todo está muy cerca).
-            5. Para reservas, redirige siempre al botón de la cabecera.
+            REGLAS CRÍTICAS DE FORMATO:
+            1. PROHIBIDO usar asteriscos (*). No los uses para negrita ni para listas.
+            2. Usa viñetas claras con el símbolo "•" para enumerar opciones o servicios.
+            3. Estructura la respuesta en párrafos cortos. 
+            4. Usa saltos de línea (ENTER) para separar ideas. No amontones el texto.
+            5. Sé amable, proactivo y usa emojis de viaje 🏨.
             
-            DATOS CLAVE DEL PDF:
-            - Check-in: 15:00h (Recepción 24h).
-            - Check-out: 11:00h.
-            - Transporte: Aerobús + Metro L3 Liceu es lo mejor.
+            CONTENIDO:
+            - Ayuda con info técnica y consejos locales.
+            - Si no tenemos algo (TV, cocina), ofrece alternativas con empatía.
+            - Accesibilidad: NO adaptado.
+            - Reservas: Botón "Reserva" arriba a la derecha.
             
             Información del Hostal:
             ${kbContent}`
@@ -161,7 +161,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f8fafc] hide-scroll">
         ${messages.map((m, i) => html`
           <div key=${i} className=${`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeInUp`}>
-            <div className=${`max-w-[85%] p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}>
+            <div className=${`max-w-[88%] p-4 rounded-2xl text-[13px] leading-[1.6] shadow-sm whitespace-pre-wrap ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}>
                ${m.text}
             </div>
           </div>
