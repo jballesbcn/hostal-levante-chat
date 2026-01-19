@@ -24,12 +24,13 @@ const UI_TEXT = {
 };
 
 const askAI = async (messages, knowledge, lang) => {
-  // Inicialización estrictamente según las reglas del SDK
+  // Inicialización directa según las reglas del SDK
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const knowledgeBase = knowledge.map(k => `${k.title}: ${k.content}`).join('\n');
-  const systemInstruction = `Eres el asistente del Hostal Levante en Barcelona. Idioma: ${lang}. 
-  Responde de forma amable y concisa. Usa **negritas** para información relevante.
+  const systemInstruction = `Eres el asistente oficial del Hostal Levante en Barcelona. Idioma: ${lang}. 
+  Responde de forma amable, servicial y concisa (máximo 2 párrafos). 
+  Usa **negritas** para datos importantes como horarios o direcciones.
   Información del hostal: ${knowledgeBase}`;
 
   const contents = messages.map(m => ({
@@ -58,19 +59,25 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
   const t = UI_TEXT[lang] || UI_TEXT.es;
 
+  // Cargar saludo inicial
   useEffect(() => {
     setMessages([{ role: 'model', text: GREETINGS[lang] || GREETINGS.es, isGreeting: true }]);
   }, [lang]);
 
+  // Autoscroll
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
   }, [messages, isTyping]);
 
   const onSend = async (text) => {
     const msgText = typeof text === 'string' ? text : input;
     if (!msgText.trim() || isTyping) return;
 
-    const newMessages = [...messages, { role: 'user', text: msgText }];
+    const userMessage = { role: 'user', text: msgText };
+    const newMessages = [...messages, userMessage];
+    
     setMessages(newMessages);
     setInput('');
     setIsTyping(true);
@@ -79,8 +86,8 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       const reply = await askAI(newMessages, knowledge, lang);
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
-      console.error("Gemini Error:", err);
-      setMessages(prev => [...prev, { role: 'model', text: t.error }]);
+      console.error("Gemini API Error:", err);
+      setMessages(prev => [...prev, { role: 'model', text: `${t.error}. Por favor, vuelve a intentarlo.` }]);
     } finally {
       setIsTyping(false);
     }
@@ -88,34 +95,44 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
 
   const toggleChat = (state) => {
     setIsOpen(state);
-    if (isEmbedded) window.parent.postMessage({ type: 'chatbot_state', open: state }, '*');
+    if (isEmbedded) {
+      window.parent.postMessage({ type: 'chatbot_state', open: state }, '*');
+    }
   };
 
   if (!isOpen && isEmbedded) return html`
-    <div className="w-full h-full flex items-center justify-center">
-      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition-transform">
+    <div className="w-full h-full flex items-center justify-center bg-transparent">
+      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform pulse-blue border-4 border-white">
         <i className="fas fa-comments text-2xl"></i>
       </button>
     </div>
   `;
 
   return html`
-    <div className=${`flex flex-col bg-white shadow-2xl animate-chat ${isEmbedded ? 'w-full h-full' : 'fixed bottom-5 right-5 w-[350px] h-[500px] rounded-2xl border'}`}>
-      <div className="bg-[#1e3a8a] p-4 text-white flex justify-between items-center rounded-t-2xl">
-        <span className="font-bold text-sm">Hostal Levante</span>
-        <button onClick=${() => toggleChat(false)} className="text-white/80 hover:text-white"><i className="fas fa-times"></i></button>
+    <div className=${`flex flex-col bg-white shadow-2xl animate-chat ${isEmbedded ? 'w-full h-full' : 'fixed bottom-5 right-5 w-[380px] h-[600px] rounded-[2rem] border'}`}>
+      <!-- Header -->
+      <div className="bg-[#1e3a8a] p-5 text-white flex justify-between items-center rounded-t-[2rem]">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <span className="font-bold text-sm tracking-wide">Asistente Levante</span>
+        </div>
+        <button onClick=${() => toggleChat(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
+          <i className="fas fa-times"></i>
+        </button>
       </div>
       
-      <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 hide-scroll">
+      <!-- Messages Area -->
+      <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 hide-scroll">
         ${messages.map((m, i) => html`
           <div key=${i} className=${`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-            <div className=${`max-w-[85%] p-3 rounded-xl text-sm ${m.role === 'user' ? 'bg-[#1e3a8a] text-white' : 'bg-white border text-gray-700'}`}>
-              ${m.text}
+            <div className=${`max-w-[85%] p-3 rounded-2xl text-[13px] shadow-sm leading-relaxed ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-white border text-slate-700 rounded-tl-none'}`}>
+               <span style=${{ whiteSpace: 'pre-wrap' }}>${m.text}</span>
             </div>
+            
             ${m.isGreeting && html`
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mt-3">
                 ${(QUICK_TIPS[lang] || QUICK_TIPS.es).map(tip => html`
-                  <button onClick=${() => onSend(tip)} className="text-[11px] bg-white border border-[#1e3a8a] text-[#1e3a8a] px-3 py-1 rounded-full hover:bg-[#1e3a8a] hover:text-white transition-colors">
+                  <button key=${tip} onClick=${() => onSend(tip)} className="text-[11px] bg-white border border-[#1e3a8a] text-[#1e3a8a] px-3 py-1.5 rounded-full hover:bg-[#1e3a8a] hover:text-white transition-all shadow-sm transform hover:-translate-y-0.5">
                     ${tip}
                   </button>
                 `)}
@@ -123,20 +140,34 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
             `}
           </div>
         `)}
-        ${isTyping && html`<div className="text-xs text-gray-400 italic">Escribiendo...</div>`}
+        
+        ${isTyping && html`
+          <div className="flex space-x-1 bg-white p-3 rounded-full border shadow-sm w-fit animate-pulse">
+            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
+          </div>
+        `}
       </div>
 
-      <div className="p-3 border-t flex gap-2">
-        <input 
-          value=${input} 
-          onChange=${e => setInput(e.target.value)} 
-          onKeyDown=${e => e.key === 'Enter' && onSend()} 
-          placeholder=${t.write}
-          className="flex-1 text-sm border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#1e3a8a]" 
-        />
-        <button onClick=${onSend} className="bg-[#1e3a8a] text-white px-3 py-2 rounded-lg hover:bg-[#162d6b]">
-          <i className="fas fa-paper-plane"></i>
-        </button>
+      <!-- Input Area -->
+      <div className="p-4 bg-white border-t rounded-b-[2rem]">
+        <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl items-center focus-within:ring-2 focus-within:ring-[#1e3a8a]/20 transition-all">
+          <input 
+            value=${input} 
+            onChange=${e => setInput(e.target.value)} 
+            onKeyDown=${e => e.key === 'Enter' && onSend()} 
+            placeholder=${t.write}
+            className="flex-1 bg-transparent text-sm px-3 py-2 outline-none" 
+            disabled=${isTyping}
+          />
+          <button 
+            onClick=${onSend} 
+            disabled=${isTyping || !input.trim()}
+            className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-blue-900/10">
+            <i className=${`fas ${isTyping ? 'fa-circle-notch animate-spin' : 'fa-paper-plane'}`}></i>
+          </button>
+        </div>
       </div>
     </div>
   `;
