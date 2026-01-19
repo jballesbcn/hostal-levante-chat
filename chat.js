@@ -18,26 +18,28 @@ const QUICK_TIPS = {
 };
 
 const UI_TEXT = {
-  es: { book: "Reservar", write: "Escribe...", error: "Error de conexión" },
-  en: { book: "Book", write: "Type...", error: "Connection error" },
-  ca: { book: "Reservar", write: "Escriu...", error: "Error de connexió" }
+  es: { book: "Reservar", write: "Escribe...", error: "Error de comunicación" },
+  en: { book: "Book", write: "Type...", error: "Communication error" },
+  ca: { book: "Reservar", write: "Escriu...", error: "Error de comunicació" }
 };
 
 const askAI = async (messages, knowledge, lang) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const knowledgeBase = knowledge.map(k => `${k.title}: ${k.content}`).join('\n');
-  const systemInstruction = `Eres el asistente del Hostal Levante en Barcelona. Idioma: ${lang}. 
-  Responde de forma amable y muy concisa. Máximo 2 párrafos.
-  Usa **negritas** para información crítica.
-  Información relevante: ${knowledgeBase}`;
+  const systemInstruction = `Eres el asistente oficial del Hostal Levante en Barcelona. Idioma: ${lang}. 
+  Responde de forma amable, servicial y concisa. Máximo 2 párrafos cortos.
+  Usa **negritas** para datos importantes.
+  
+  CONOCIMIENTO DEL HOSTAL:
+  ${knowledgeBase}`;
 
-  // Gemini exige que el primer mensaje sea del usuario. 
-  // Filtramos cualquier mensaje de 'model' que esté al principio del array.
-  const filteredContents = [];
+  // REGLA DE ORO GEMINI: El historial debe empezar por 'user'.
+  // Filtramos el saludo del bot para el API.
+  const historyForAPI = [];
   for (const m of messages) {
-    if (filteredContents.length === 0 && m.role === 'model') continue;
-    filteredContents.push({
+    if (historyForAPI.length === 0 && m.role === 'model') continue;
+    historyForAPI.push({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.text }]
     });
@@ -45,11 +47,8 @@ const askAI = async (messages, knowledge, lang) => {
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: filteredContents,
-    config: {
-      systemInstruction,
-      temperature: 0.7,
-    }
+    contents: historyForAPI,
+    config: { systemInstruction, temperature: 0.7 }
   });
 
   return response.text;
@@ -89,8 +88,8 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       const reply = await askAI(newHistory, knowledge, lang);
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
-      console.error("Chat Error:", err);
-      setMessages(prev => [...prev, { role: 'model', text: t.error }]);
+      console.error("Gemini API Error:", err);
+      setMessages(prev => [...prev, { role: 'model', text: `${t.error}. Por favor, vuelve a intentarlo.` }]);
     } finally {
       setIsTyping(false);
     }
@@ -101,7 +100,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     if (isEmbedded) window.parent.postMessage({ type: 'chatbot_state', open: state }, '*');
   };
 
-  const goToBooking = () => {
+  const openBooking = () => {
     window.open('https://www.hostallevante.com/reserva', '_blank');
   };
 
@@ -114,19 +113,19 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   `;
 
   return html`
-    <div className=${`flex flex-col bg-white shadow-2xl animate-chat ${isEmbedded ? 'w-full h-full' : 'fixed bottom-5 right-5 w-[380px] h-[600px] rounded-[2rem] border overflow-hidden'}`}>
+    <div className=${`flex flex-col bg-white shadow-2xl animate-chat overflow-hidden ${isEmbedded ? 'w-full h-full' : 'fixed bottom-5 right-5 w-[380px] h-[600px] rounded-[2rem] border'}`}>
       <!-- Header con Botón de Reserva -->
       <div className="bg-[#1e3a8a] p-5 text-white flex justify-between items-center rounded-t-[2rem]">
         <div className="flex flex-col">
-          <span className="font-bold text-sm leading-none mb-1">Hostal Levante</span>
+          <span className="font-bold text-sm leading-none mb-1 tracking-tight">Hostal Levante</span>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-[10px] opacity-80 uppercase tracking-widest font-bold">Online</span>
+            <span className="text-[10px] opacity-70 uppercase font-bold tracking-widest">Online</span>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <button onClick=${goToBooking} className="bg-white text-[#1e3a8a] px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-slate-100 transition-colors shadow-sm">
+          <button onClick=${openBooking} className="bg-white text-[#1e3a8a] px-3 py-1.5 rounded-full text-[10px] font-bold uppercase hover:bg-slate-100 transition-colors shadow-sm">
             <i className="fas fa-calendar-alt mr-1"></i> ${t.book}
           </button>
           <button onClick=${() => toggleChat(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
@@ -135,7 +134,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         </div>
       </div>
       
-      <!-- Messages -->
+      <!-- Mensajes -->
       <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 hide-scroll">
         ${messages.map((m, i) => html`
           <div key=${i} className=${`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -156,12 +155,10 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         `)}
         
         ${isTyping && html`
-          <div className="flex items-center space-x-2 bg-white p-3 rounded-2xl border shadow-sm w-fit">
-            <div className="flex space-x-1">
-              <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '0ms'}}></div>
-              <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '150ms'}}></div>
-              <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '300ms'}}></div>
-            </div>
+          <div className="flex space-x-1.5 bg-white p-3 rounded-2xl border shadow-sm w-fit animate-pulse">
+            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
           </div>
         `}
       </div>
