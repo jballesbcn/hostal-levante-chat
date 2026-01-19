@@ -10,17 +10,17 @@ const UI_TEXT = {
     book: "Reserva", 
     contact: "Contacto",
     write: "Escribe tu duda...", 
-    greeting: "¡Hola! Soy el asistente de Hostal Levante. ¿En qué puedo ayudarte?", 
-    error: "Servicio temporalmente no disponible.",
-    suggestions: ["¿Cómo llegar?", "¿Horario check-in?", "Reservar habitación", "Contacto"]
+    greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", 
+    error: "Lo siento, mi conexión ha fallado un momento.",
+    suggestions: ["¿Cómo llegar?", "Check-in 24h?", "¿Tienen Wifi?", "Qué ver cerca", "Reservar"]
   },
   en: { 
     book: "Book Now", 
     contact: "Contact",
     write: "Type your question...", 
-    greeting: "Hi! I'm the Hostal Levante assistant. How can I help you?", 
-    error: "Service temporarily unavailable.",
-    suggestions: ["How to get here?", "Check-in time?", "Book a room", "Contact"]
+    greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", 
+    error: "I'm sorry, I lost my connection for a second.",
+    suggestions: ["How to get here?", "24h Check-in?", "Free Wifi?", "Local tips", "Book"]
   }
 };
 
@@ -64,8 +64,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     
     const lowerText = textToSend.toLowerCase();
 
-    // Lógica de redirección por palabras clave
-    if (lowerText.includes('reservar') || lowerText.includes('book')) {
+    if (lowerText.includes('reservar') || (lowerText.includes('book') && !lowerText.includes('ing'))) {
         goToBooking();
         return;
     }
@@ -86,11 +85,22 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         model: 'gemini-3-flash-preview',
         contents: textToSend,
         config: { 
-            temperature: 0.7,
-            systemInstruction: `Eres el asistente oficial del Hostal Levante en Barcelona. 
-            Responde de forma amable, servicial y concisa. 
-            Utiliza emojis de forma moderada para ser amigable.
-            Si el usuario quiere reservar, menciónale que puede usar el botón de "Reserva" arriba a la derecha.
+            temperature: 0.8, // Un poco más de creatividad para el modo concierge
+            systemInstruction: `Eres el CONCIERGE experto del Hostal Levante en Barcelona. 
+            Tu misión es ayudar a los huéspedes con información técnica del hostal y dar consejos locales sobre Barcelona.
+            
+            REGLAS DE ORO:
+            1. Sé amable, proactivo y usa emojis de viaje 🏨✈️.
+            2. Si preguntan por servicios que NO tenemos (TV, cocina, desayuno), responde con empatía y ofrece alternativas cercanas (cafeterías, el office de recepción para medicinas).
+            3. Si preguntan por accesibilidad, sé muy claro: NO estamos adaptados.
+            4. Si preguntan por planes o qué ver, actúa como guía local: menciona Las Ramblas, el Barrio Gótico, la Catedral o el mercado de la Boquería (todo está muy cerca).
+            5. Para reservas, redirige siempre al botón de la cabecera.
+            
+            DATOS CLAVE DEL PDF:
+            - Check-in: 15:00h (Recepción 24h).
+            - Check-out: 11:00h.
+            - Transporte: Aerobús + Metro L3 Liceu es lo mejor.
+            
             Información del Hostal:
             ${kbContent}`
         }
@@ -114,7 +124,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   if (!isOpen && isEmbedded) return html`
     <div className="w-full h-full flex items-center justify-center">
       <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all border-4 border-white animate-bounce-slow">
-        <i className="fas fa-comment-dots text-2xl"></i>
+        <i className="fas fa-concierge-bell text-2xl"></i>
       </button>
     </div>
   `;
@@ -127,13 +137,13 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
         <div className="flex items-center gap-3 relative z-10">
           <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center shadow-inner border border-white/20">
-             <i className="fas fa-hotel text-sm"></i>
+             <i className="fas fa-concierge-bell text-sm"></i>
           </div>
           <div>
             <div className="font-black text-[13px] tracking-tight">Hostal Levante</div>
             <div className="flex items-center gap-1.5">
                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-               <span className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Asistente Virtual</span>
+               <span className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Concierge AI</span>
             </div>
           </div>
         </div>
@@ -201,7 +211,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
           </button>
         </div>
         <div className="mt-3 text-center">
-            <span className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Powered by Hostal Levante AI</span>
+            <span className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Hostal Levante AI Concierge</span>
         </div>
       </div>
     </div>
