@@ -23,9 +23,9 @@ const QUICK_TIPS = {
 };
 
 const UI_TEXT = {
-  es: { book: "Reservar ahora", write: "Escribe...", error: "Error de conexión" },
-  en: { book: "Book now", write: "Type...", error: "Connection error" },
-  ca: { book: "Reservar ara", write: "Escriu...", error: "Error de connexió" }
+  es: { book: "Reservar ahora", write: "Escribe...", error: "Error de conexión", missingKey: "API Key no detectada. Por favor, verifica la configuración del entorno." },
+  en: { book: "Book now", write: "Type...", error: "Connection error", missingKey: "API Key not detected. Please verify environment configuration." },
+  ca: { book: "Reservar ara", write: "Escriu...", error: "Error de connexió", missingKey: "API Key no detectada. Per favor, verifica la configuració." }
 };
 
 const BOOKING_URL = "https://booking.redforts.com/e4mh/";
@@ -46,8 +46,16 @@ const FormattedMessage = ({ text }) => {
 };
 
 const askAI = async (history, knowledge, lang) => {
+  const apiKey = process.env.API_KEY;
+  const t = UI_TEXT[lang] || UI_TEXT.es;
+
+  // Validación de la clave antes de inicializar
+  if (!apiKey || apiKey === 'undefined' || apiKey === '') {
+    throw new Error(t.missingKey);
+  }
+
   // Inicialización usando exactamente process.env.API_KEY
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   
   const knowledgeStr = knowledge.map(k => `${k.title}: ${k.content}`).join(' | ');
   const systemInstruction = `Eres el asistente oficial del Hostal Levante en Barcelona. Idioma: ${lang}. 
@@ -58,15 +66,12 @@ NORMAS:
 - Si no sabes algo, indica que contacten por el formulario de la web.
 CONOCIMIENTO ACTUAL: ${knowledgeStr}`;
 
-  // Filtramos el historial para cumplir con el esquema User -> Model -> User
   const contents = [];
   let lastRole = null;
 
   for (const msg of history) {
     const role = msg.role === 'user' ? 'user' : 'model';
-    // No podemos empezar con el modelo (el saludo inicial se ignora en el envío)
     if (contents.length === 0 && role === 'model') continue;
-    // No podemos tener dos roles iguales seguidos
     if (role === lastRole) continue;
     
     contents.push({
@@ -76,13 +81,12 @@ CONOCIMIENTO ACTUAL: ${knowledgeStr}`;
     lastRole = role;
   }
 
-  // Si después del filtro no hay nada, buscamos el último mensaje del usuario
   if (contents.length === 0) {
     const lastUserMsg = [...history].reverse().find(m => m.role === 'user');
     if (lastUserMsg) {
       contents.push({ role: 'user', parts: [{ text: lastUserMsg.text }] });
     } else {
-      throw new Error("No hay mensajes del usuario para enviar.");
+      throw new Error("No hay mensajes de usuario.");
     }
   }
 
@@ -98,7 +102,7 @@ CONOCIMIENTO ACTUAL: ${knowledgeStr}`;
   });
 
   if (!response || !response.text) {
-    throw new Error("No se recibió respuesta de la IA.");
+    throw new Error("No se recibió respuesta del modelo.");
   }
 
   return response.text;
@@ -114,7 +118,6 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   const t = UI_TEXT[lang] || UI_TEXT.es;
 
   useEffect(() => {
-    // Saludo inicial del bot
     setMessages([{ role: 'model', text: GREETINGS[lang] || GREETINGS.es, isGreeting: true }]);
   }, [lang]);
 
@@ -145,9 +148,8 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
       console.error("Gemini Error:", err);
-      // Mostramos un mensaje de error más útil
       const errorMsg = err.message || "Error desconocido";
-      setMessages(prev => [...prev, { role: 'model', text: `${t.error}: ${errorMsg}. Por favor, inténtalo de nuevo.` }]);
+      setMessages(prev => [...prev, { role: 'model', text: `${t.error}: ${errorMsg}` }]);
     } finally {
       setIsTyping(false);
     }
