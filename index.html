@@ -7,8 +7,9 @@
     <title>Levante Contact - Modular</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
-        body { margin: 0; padding: 0; background: transparent !important; font-family: sans-serif; }
+        body { margin: 0; padding: 0; background: transparent !important; font-family: sans-serif; overflow: hidden; }
         #root { width: 100%; height: 100vh; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
@@ -16,6 +17,8 @@
         .animate-chat { animation: slideUp 0.3s ease-out forwards; }
         .pulse-blue { animation: pulse-dot 2s infinite; }
         @keyframes pulse-dot { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(30, 58, 138, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0); } }
+        /* Ajuste para que el recaptcha no rompa el diseño en móviles */
+        .g-recaptcha { transform: scale(0.85); transform-origin: 0 0; }
     </style>
     <script type="importmap">
 {
