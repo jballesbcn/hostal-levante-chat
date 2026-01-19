@@ -8,7 +8,7 @@ try {
   if (!fs.existsSync(distDir)) fs.mkdirSync(distDir);
 
   // Archivos a procesar
-  const files = ['main.js', 'chat.js', 'booking.js'];
+  const files = ['main.js', 'chat.js', 'contact.js'];
 
   files.forEach(file => {
     const filePath = path.join(__dirname, file);

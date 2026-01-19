@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import htm from 'htm';
 import { ChatWidget } from './chat.js';
-import { BookingForm } from './booking.js';
+import { ContactForm } from './contact.js';
 
 const html = htm.bind(React.createElement);
 
@@ -19,15 +19,15 @@ const AdminPanel = ({ knowledge, setKnowledge }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
             <h3 className="font-bold text-blue-800 mb-1 text-sm">Estado del Chat</h3>
-            <p className="text-xs text-blue-600">Operativo y respondiendo en 8 idiomas.</p>
+            <p className="text-xs text-blue-600">Operativo en 8 idiomas.</p>
           </div>
-          <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
-            <h3 className="font-bold text-orange-800 mb-1 text-sm">Motor de Reservas</h3>
-            <p className="text-xs text-orange-600">En fase de desarrollo y arquitectura.</p>
+          <div className="p-4 bg-green-50 rounded-2xl border border-green-100">
+            <h3 className="font-bold text-green-800 mb-1 text-sm">Formulario de Contacto</h3>
+            <p className="text-xs text-green-600">Listo para integración externa.</p>
           </div>
         </div>
 
-        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Base de Conocimiento</h2>
+        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Base de Conocimiento Chat</h2>
         <div className="space-y-3">
           ${knowledge.map(k => html`
             <div key=${k.id} className="flex gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 focus-within:border-blue-400 transition-colors">
@@ -48,7 +48,6 @@ const AdminPanel = ({ knowledge, setKnowledge }) => {
         </div>
       </div>
       
-      <!-- Preview del Chat en el admin -->
       <${ChatWidget} knowledge=${knowledge} isEmbedded=${false} />
     </div>
   `;
@@ -66,7 +65,7 @@ const App = () => {
 
   // ROUTER LOGIC
   if (isEmbed) {
-    if (view === 'booking') return html`<${BookingForm} />`;
+    if (view === 'contact') return html`<${ContactForm} />`;
     return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} />`;
   }
 
