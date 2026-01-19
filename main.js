@@ -31,9 +31,10 @@ const App = () => {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
 
+  // Solo mantenemos la vista de contacto y la del chat (por defecto)
   if (view === 'contact') return html`<${ContactForm} />`;
   
-  // Por defecto el chatbot
+  // Por defecto el chatbot (o panel admin si no hay embed)
   return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${params.get('embed') === 'true'} />`;
 };
 
