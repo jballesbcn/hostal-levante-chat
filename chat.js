@@ -18,25 +18,31 @@ const QUICK_TIPS = {
 };
 
 const UI_TEXT = {
-  es: { book: "Reservar", write: "Escribe un mensaje...", error: "Error de conexión" },
-  en: { book: "Book", write: "Type a message...", error: "Connection error" },
-  ca: { book: "Reservar", write: "Escriu un missatge...", error: "Error de connexió" }
+  es: { book: "Reservar ahora", write: "Escribe...", error: "Error de conexión" },
+  en: { book: "Book now", write: "Type...", error: "Connection error" },
+  ca: { book: "Reservar ara", write: "Escriu...", error: "Error de connexió" }
 };
 
 const askAI = async (messages, knowledge, lang) => {
-  // Inicialización directa según las reglas del SDK
+  // Inicialización siguiendo estrictamente el SDK
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const knowledgeBase = knowledge.map(k => `${k.title}: ${k.content}`).join('\n');
   const systemInstruction = `Eres el asistente oficial del Hostal Levante en Barcelona. Idioma: ${lang}. 
-  Responde de forma amable, servicial y concisa (máximo 2 párrafos). 
-  Usa **negritas** para datos importantes como horarios o direcciones.
-  Información del hostal: ${knowledgeBase}`;
+  Responde de forma amable y servicial. Usa **negritas** para información clave. 
+  Respuestas cortas (máximo 2 párrafos).
+  
+  CONTEXTO DEL HOSTAL:
+  ${knowledgeBase}`;
 
-  const contents = messages.map(m => ({
-    role: m.role === 'user' ? 'user' : 'model',
-    parts: [{ text: m.text }]
-  }));
+  // REGLA CRÍTICA: El historial debe empezar por 'user' y alternar.
+  // Filtramos el saludo inicial si es de tipo 'model'.
+  const contents = [];
+  for (const m of messages) {
+    const role = m.role === 'user' ? 'user' : 'model';
+    if (contents.length === 0 && role === 'model') continue;
+    contents.push({ role, parts: [{ text: m.text }] });
+  }
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -59,34 +65,32 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
   const t = UI_TEXT[lang] || UI_TEXT.es;
 
-  // Cargar saludo inicial
   useEffect(() => {
     setMessages([{ role: 'model', text: GREETINGS[lang] || GREETINGS.es, isGreeting: true }]);
   }, [lang]);
 
-  // Autoscroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages, isTyping]);
 
-  const onSend = async (text) => {
-    const msgText = typeof text === 'string' ? text : input;
-    if (!msgText.trim() || isTyping) return;
+  const onSend = async (customText) => {
+    const text = typeof customText === 'string' ? customText : input;
+    if (!text.trim() || isTyping) return;
 
-    const userMessage = { role: 'user', text: msgText };
-    const newMessages = [...messages, userMessage];
+    const userMsg = { role: 'user', text };
+    const currentHistory = [...messages, userMsg];
     
-    setMessages(newMessages);
+    setMessages(currentHistory);
     setInput('');
     setIsTyping(true);
 
     try {
-      const reply = await askAI(newMessages, knowledge, lang);
+      const reply = await askAI(currentHistory, knowledge, lang);
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
-      console.error("Gemini API Error:", err);
+      console.error("Gemini Error:", err);
       setMessages(prev => [...prev, { role: 'model', text: `${t.error}. Por favor, vuelve a intentarlo.` }]);
     } finally {
       setIsTyping(false);
@@ -95,9 +99,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
 
   const toggleChat = (state) => {
     setIsOpen(state);
-    if (isEmbedded) {
-      window.parent.postMessage({ type: 'chatbot_state', open: state }, '*');
-    }
+    if (isEmbedded) window.parent.postMessage({ type: 'chatbot_state', open: state }, '*');
   };
 
   if (!isOpen && isEmbedded) return html`
@@ -110,18 +112,16 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
 
   return html`
     <div className=${`flex flex-col bg-white shadow-2xl animate-chat ${isEmbedded ? 'w-full h-full' : 'fixed bottom-5 right-5 w-[380px] h-[600px] rounded-[2rem] border'}`}>
-      <!-- Header -->
       <div className="bg-[#1e3a8a] p-5 text-white flex justify-between items-center rounded-t-[2rem]">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          <span className="font-bold text-sm tracking-wide">Asistente Levante</span>
+          <span className="font-bold text-sm tracking-wide leading-none">Asistente Levante</span>
         </div>
         <button onClick=${() => toggleChat(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
           <i className="fas fa-times"></i>
         </button>
       </div>
       
-      <!-- Messages Area -->
       <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 hide-scroll">
         ${messages.map((m, i) => html`
           <div key=${i} className=${`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -142,17 +142,18 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         `)}
         
         ${isTyping && html`
-          <div className="flex space-x-1 bg-white p-3 rounded-full border shadow-sm w-fit animate-pulse">
-            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
-            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
-            <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full"></div>
+          <div className="flex items-center space-x-2 bg-white p-3 rounded-2xl border shadow-sm w-fit">
+            <div className="flex space-x-1">
+              <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '0ms'}}></div>
+              <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '150ms'}}></div>
+              <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '300ms'}}></div>
+            </div>
           </div>
         `}
       </div>
 
-      <!-- Input Area -->
       <div className="p-4 bg-white border-t rounded-b-[2rem]">
-        <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl items-center focus-within:ring-2 focus-within:ring-[#1e3a8a]/20 transition-all">
+        <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl items-center focus-within:ring-2 focus-within:ring-[#1e3a8a]/20 transition-all shadow-inner">
           <input 
             value=${input} 
             onChange=${e => setInput(e.target.value)} 
@@ -164,7 +165,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
           <button 
             onClick=${onSend} 
             disabled=${isTyping || !input.trim()}
-            className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-blue-900/10">
+            className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-blue-900/20">
             <i className=${`fas ${isTyping ? 'fa-circle-notch animate-spin' : 'fa-paper-plane'}`}></i>
           </button>
         </div>
