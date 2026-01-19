@@ -13,7 +13,7 @@ const GREETINGS = {
   it: "Ciao! Sono l'assistente del Hostal Levante. Come posso aiutarti?",
   fr: "Bonjour ! Je suis l'assistant de l'Hostal Levante. Comment puis-je vous aider ?",
   nl: "Hallo! Hoe kan ik u helpen?",
-  pt: "Olá! Como posso ajudá-lo?"
+  pt: "Olá! Como posso ayudá-lo?"
 };
 
 const QUICK_TIPS = {
@@ -23,9 +23,9 @@ const QUICK_TIPS = {
 };
 
 const UI_TEXT = {
-  es: { book: "Reservar ahora", write: "Escribe...", error: "Lo siento, ha habido un problema de conexión. ¿Puedes repetir?" },
-  en: { book: "Book now", write: "Type...", error: "Sorry, there was a connection issue. Can you try again?" },
-  ca: { book: "Reservar ara", write: "Escriu...", error: "Ho sento, hi ha un problema de connexió. Pots repetir?" }
+  es: { book: "Reservar ahora", write: "Escribe...", error: "Error de conexión" },
+  en: { book: "Book now", write: "Type...", error: "Connection error" },
+  ca: { book: "Reservar ara", write: "Escriu...", error: "Error de connexió" }
 };
 
 const BOOKING_URL = "https://booking.redforts.com/e4mh/";
@@ -46,7 +46,7 @@ const FormattedMessage = ({ text }) => {
 };
 
 const askAI = async (history, knowledge, lang) => {
-  // Inicialización directa según las reglas de la plataforma
+  // Inicialización usando exactamente process.env.API_KEY
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const knowledgeStr = knowledge.map(k => `${k.title}: ${k.content}`).join(' | ');
@@ -55,18 +55,18 @@ Eres amable y servicial.
 NORMAS: 
 - Respuestas breves (máx 2-3 párrafos).
 - Usa **negritas** para datos importantes.
-- Si no sabes algo, indica que contacten por el formulario.
-CONOCIMIENTO: ${knowledgeStr}`;
+- Si no sabes algo, indica que contacten por el formulario de la web.
+CONOCIMIENTO ACTUAL: ${knowledgeStr}`;
 
-  // Filtrar historial: Debe empezar por 'user' y alternar roles
+  // Filtramos el historial para cumplir con el esquema User -> Model -> User
   const contents = [];
   let lastRole = null;
 
   for (const msg of history) {
     const role = msg.role === 'user' ? 'user' : 'model';
-    // Saltamos mensajes del bot al inicio
+    // No podemos empezar con el modelo (el saludo inicial se ignora en el envío)
     if (contents.length === 0 && role === 'model') continue;
-    // Evitamos roles duplicados seguidos
+    // No podemos tener dos roles iguales seguidos
     if (role === lastRole) continue;
     
     contents.push({
@@ -76,9 +76,14 @@ CONOCIMIENTO: ${knowledgeStr}`;
     lastRole = role;
   }
 
-  // Si por algún motivo el filtrado falla, enviamos el último mensaje del usuario
+  // Si después del filtro no hay nada, buscamos el último mensaje del usuario
   if (contents.length === 0) {
-    contents.push({ role: 'user', parts: [{ text: history[history.length - 1].text }] });
+    const lastUserMsg = [...history].reverse().find(m => m.role === 'user');
+    if (lastUserMsg) {
+      contents.push({ role: 'user', parts: [{ text: lastUserMsg.text }] });
+    } else {
+      throw new Error("No hay mensajes del usuario para enviar.");
+    }
   }
 
   const response = await ai.models.generateContent({
@@ -86,9 +91,15 @@ CONOCIMIENTO: ${knowledgeStr}`;
     contents: contents,
     config: {
       systemInstruction,
-      temperature: 0.7
+      temperature: 0.7,
+      topP: 0.95,
+      topK: 40
     }
   });
+
+  if (!response || !response.text) {
+    throw new Error("No se recibió respuesta de la IA.");
+  }
 
   return response.text;
 };
@@ -103,6 +114,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   const t = UI_TEXT[lang] || UI_TEXT.es;
 
   useEffect(() => {
+    // Saludo inicial del bot
     setMessages([{ role: 'model', text: GREETINGS[lang] || GREETINGS.es, isGreeting: true }]);
   }, [lang]);
 
@@ -132,8 +144,10 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       const reply = await askAI(newMsgs, knowledge, lang);
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
-      console.error("Chat Error:", err);
-      setMessages(prev => [...prev, { role: 'model', text: t.error }]);
+      console.error("Gemini Error:", err);
+      // Mostramos un mensaje de error más útil
+      const errorMsg = err.message || "Error desconocido";
+      setMessages(prev => [...prev, { role: 'model', text: `${t.error}: ${errorMsg}. Por favor, inténtalo de nuevo.` }]);
     } finally {
       setIsTyping(false);
     }
@@ -141,7 +155,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
 
   if (!isOpen && isEmbedded) return html`
     <div className="w-full h-full flex items-center justify-center bg-transparent">
-      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center pulse-blue border-4 border-white">
+      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center pulse-blue border-4 border-white transition-transform hover:scale-110 active:scale-95">
         <i className="fas fa-comments text-2xl"></i>
       </button>
     </div>
@@ -150,22 +164,26 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   return html`
     <div className=${`flex flex-col bg-white shadow-2xl animate-chat ${isEmbedded ? 'w-full h-full' : 'fixed bottom-5 right-5 w-[380px] h-[600px] rounded-[2rem] border'}`}>
       <div className="bg-[#1e3a8a] p-4 text-white flex justify-between items-center rounded-t-[2rem]">
-        <div className="flex items-center space-x-2"><i className="fas fa-hotel"></i><span className="font-bold text-sm">Hostal Levante</span></div>
         <div className="flex items-center space-x-2">
-          <a href=${BOOKING_URL} target="_blank" className="bg-white text-[#1e3a8a] text-[10px] font-bold px-3 py-1 rounded-full uppercase">${t.book}</a>
-          <button onClick=${() => toggleChat(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10"><i className="fas fa-times"></i></button>
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <span className="font-bold text-sm">Asistente Levante</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <a href=${BOOKING_URL} target="_blank" className="bg-white text-[#1e3a8a] text-[10px] font-bold px-3 py-1 rounded-full uppercase hover:bg-slate-100 transition-colors">${t.book}</a>
+          <button onClick=${() => toggleChat(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"><i className="fas fa-times"></i></button>
         </div>
       </div>
+      
       <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 hide-scroll">
         ${messages.map((m, idx) => html`
           <div key=${idx} className=${`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-            <div className=${`max-w-[85%] p-3 rounded-2xl text-[13px] ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-white text-slate-700 rounded-tl-none border shadow-sm'}`}>
+            <div className=${`max-w-[85%] p-3 rounded-2xl text-[13px] shadow-sm ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-white text-slate-700 rounded-tl-none border'}`}>
               <${FormattedMessage} text=${m.text} />
             </div>
             ${m.isGreeting && html`
               <div className="flex flex-wrap gap-2 mt-3">
                 ${(QUICK_TIPS[lang] || QUICK_TIPS.es).map(tip => html`
-                  <button key=${tip} onClick=${() => onSend(tip)} className="text-[11px] bg-white border border-[#1e3a8a] text-[#1e3a8a] px-3 py-1.5 rounded-full hover:bg-[#1e3a8a] hover:text-white transition-all shadow-sm">
+                  <button key=${tip} onClick=${() => onSend(tip)} className="text-[11px] bg-white border border-[#1e3a8a] text-[#1e3a8a] px-3 py-1.5 rounded-full hover:bg-[#1e3a8a] hover:text-white transition-all shadow-sm transform hover:-translate-y-0.5">
                     ${tip}
                   </button>
                 `)}
@@ -175,23 +193,30 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         `)}
         ${isTyping && html`
           <div className="flex items-center space-x-2 mt-2 ml-1">
-             <div className="flex space-x-1">
-                <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style=${{animationDelay: '0ms'}}></div>
-                <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style=${{animationDelay: '150ms'}}></div>
-                <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style=${{animationDelay: '300ms'}}></div>
+             <div className="flex space-x-1 bg-white p-2 rounded-full border shadow-sm">
+                <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '0ms'}}></div>
+                <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '150ms'}}></div>
+                <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '300ms'}}></div>
              </div>
           </div>
         `}
       </div>
+
       <div className="p-4 bg-white border-t flex space-x-2 rounded-b-[2rem]">
         <input 
           value=${input} 
           onChange=${e => setInput(e.target.value)} 
           onKeyDown=${e => e.key === 'Enter' && onSend()} 
           placeholder=${t.write} 
-          className="flex-1 bg-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1e3a8a]/20" 
+          disabled=${isTyping}
+          className="flex-1 bg-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1e3a8a]/20 transition-all disabled:opacity-50" 
         />
-        <button onClick=${onSend} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"><i className="fas fa-paper-plane"></i></button>
+        <button 
+          onClick=${onSend} 
+          disabled=${isTyping || !input.trim()}
+          className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
+          <i className=${`fas ${isTyping ? 'fa-circle-notch animate-spin' : 'fa-paper-plane'}`}></i>
+        </button>
       </div>
     </div>
   `;
