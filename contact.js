@@ -10,7 +10,7 @@ const TEXTS = {
     name: "Nombre", email: "Email", whatsapp: "WhatsApp (opcional)", message: "Mensaje",
     send: "Enviar Mensaje", sending: "Enviando...",
     success: "¡Mensaje enviado!", successSub: "Hemos recibido tu consulta. Te responderemos muy pronto a contactoweb@hostallevante.com",
-    error: "Error al enviar. Inténtalo de nuevo.",
+    error: "Error al enviar. Por favor, contacta directamente con nosotros.",
     captcha: "Por favor, verifica que no eres un robot."
   },
   en: {
@@ -18,7 +18,7 @@ const TEXTS = {
     name: "Name", email: "Email", whatsapp: "WhatsApp (optional)", message: "Message",
     send: "Send Message", sending: "Sending...",
     success: "Message sent!", successSub: "We have received your inquiry. We will reply shortly.",
-    error: "Error sending. Please try again.",
+    error: "Error sending. Please try contacting us directly.",
     captcha: "Please verify that you are not a robot."
   },
   ca: {
@@ -26,7 +26,7 @@ const TEXTS = {
     name: "Nom", email: "Email", whatsapp: "WhatsApp (opcional)", message: "Missatge",
     send: "Enviar Missatge", sending: "Enviant...",
     success: "Missatge enviat!", successSub: "Hem rebut la teva consulta. Et respondrem ben aviat.",
-    error: "Error en enviar. Torna-ho a intentar.",
+    error: "Error en enviar. Torna-ho a intentar o contacta per telèfon.",
     captcha: "Per favor, verifica que no ets un robot."
   },
   fr: {
@@ -65,7 +65,7 @@ const TEXTS = {
     title: "Contacto", subtitle: "Estamos aqui para ajudar.",
     name: "Nome", email: "E-mail", whatsapp: "WhatsApp (opcional)", message: "Mensagem",
     send: "Enviar", sending: "A enviar...",
-    success: "Mensagem enviada!", successSub: "Responderemos o mais breve posible.",
+    success: "Mensagem enviada!", successSub: "Responderemos o más breve posible.",
     error: "Erro ao enviar.",
     captcha: "Por favor, verifique que não é um robô."
   }
@@ -97,10 +97,25 @@ export const ContactForm = () => {
     setStatus('sending');
     
     try {
-      // Los datos ahora incluyen: formData.name, formData.email, formData.whatsapp, formData.message
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setStatus('success');
+      // LLAMADA REAL AL SERVIDOR PHP
+      // Reemplaza esta URL con la ruta absoluta donde subas el archivo PHP
+      const response = await fetch('https://www.hostallevante.com/send_email.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        setStatus('success');
+      } else {
+        throw new Error(result.message || 'Error en el servidor');
+      }
     } catch (err) {
+      console.error("Error envío:", err);
       setStatus('error');
     }
   };
