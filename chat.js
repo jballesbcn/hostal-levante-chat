@@ -6,31 +6,26 @@ import { GoogleGenAI } from "@google/genai";
 const html = htm.bind(React.createElement);
 
 const GREETINGS = {
-  es: "¡Hola! Soy el asistente del Hostal Levante. ¿En qué puedo ayudarte hoy?",
-  en: "Hi! I'm the Hostal Levante assistant. How can I help you today?",
-  ca: "Hola! Soc l'assistent de l'Hostal Levante. En què et puc ayudar avui?",
-  de: "Hallo! Ich bin der Assistent des Hostal Levante. Wie kann ich Ihnen heute helfen?",
-  it: "Ciao! Sono l'assistente dell'Hostal Levante. Come posso aiutarti oggi?",
-  fr: "Bonjour ! Je suis l'assistant de l'Hostal Levante. Comment puis-je vous aider aujourd'hui ?",
-  nl: "Hallo! Ich bin de assistent van Hostal Levante. Hoe kan ik u vandaag helpen?",
-  pt: "Olá! Sou o assistente do Hostal Levante. Como posso ajudá-lo hoje?"
+  es: "¡Hola! Soy el asistente del Hostal Levante. ¿En qué puedo ayudarte?",
+  en: "Hi! I'm the Hostal Levante assistant. How can I help you?",
+  ca: "Hola! Soc l'assistent de l'Hostal Levante. En què et puc ayudar?",
+  de: "Hallo! Ich bin der Levante-Assistent. Wie kann ich helfen?",
+  it: "Ciao! Sono l'assistente del Hostal Levante. Come posso aiutarti?",
+  fr: "Bonjour ! Je suis l'assistant de l'Hostal Levante. Comment puis-je vous aider ?",
+  nl: "Hallo! Hoe kan ik u helpen?",
+  pt: "Olá! Como posso ajudá-lo?"
 };
 
 const QUICK_TIPS = {
   es: ["¿Cómo llegar?", "Horario Check-in", "¿Hay Wifi?", "Lugares cercanos"],
   en: ["How to get here?", "Check-in time", "Is there Wifi?", "Nearby places"],
-  ca: ["Com arribar-hi?", "Horari Check-in", "Hi ha Wifi?", "Llocs propers"],
-  de: ["Anfahrt?", "Check-in Zeit", "Gibt es WLAN?", "Orte in der Nähe"],
-  it: ["Come arrivare?", "Orario Check-in", "C'è el Wifi?", "Luoghi vicini"],
-  fr: ["Comment venir ?", "Heure d'arrivée", "Y a-t-il du Wifi ?", "Lieux proches"],
-  nl: ["Hoe kom ik er?", "Check-in tijd", "Is er Wifi?", "Plaatsen in de buurt"],
-  pt: ["Como chegar?", "Horário de Check-in", "Tem Wifi?", "Lugares próximos"]
+  ca: ["Com arribar-hi?", "Horari Check-in", "Hi ha Wifi?", "Llocs propers"]
 };
 
 const UI_TEXT = {
-  es: { book: "Reservar ahora", write: "Escribe...", error: "Error de conexión. Inténtalo de nuevo." },
-  en: { book: "Book now", write: "Write...", error: "Connection error. Please try again." },
-  ca: { book: "Reservar ara", write: "Escriu...", error: "Error de connexió. Torna-ho a provar." }
+  es: { book: "Reservar ahora", write: "Escribe...", error: "Lo siento, ha habido un problema de conexión. ¿Puedes repetir?" },
+  en: { book: "Book now", write: "Type...", error: "Sorry, there was a connection issue. Can you try again?" },
+  ca: { book: "Reservar ara", write: "Escriu...", error: "Ho sento, hi ha un problema de connexió. Pots repetir?" }
 };
 
 const BOOKING_URL = "https://booking.redforts.com/e4mh/";
@@ -51,66 +46,51 @@ const FormattedMessage = ({ text }) => {
 };
 
 const askAI = async (history, knowledge, lang) => {
-  // Verificación robusta de la API KEY
-  let apiKey = "";
-  try {
-    apiKey = process.env.API_KEY;
-  } catch (e) {
-    console.warn("process.env no está definido, buscando alternativa...");
-  }
-
-  if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
-    console.error("API Key faltante o inválida");
-    throw new Error("API_KEY_MISSING");
-  }
-
-  try {
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const systemInstruction = `Eres el asistente virtual del Hostal Levante (Barcelona). 
-Idioma: ${lang}. 
-Eres amable, servicial y actúas como un recepcionista experto.
+  // Inicialización directa según las reglas de la plataforma
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const knowledgeStr = knowledge.map(k => `${k.title}: ${k.content}`).join(' | ');
+  const systemInstruction = `Eres el asistente oficial del Hostal Levante en Barcelona. Idioma: ${lang}. 
+Eres amable y servicial. 
 NORMAS: 
-- Respuestas concisas (máximo 3 párrafos).
-- Usa **negritas** para información crítica.
-- Usa "•" para listas.
-- Si no sabes algo, invita a usar el formulario de contacto.
-CONOCIMIENTO: ${knowledge.map(k => `${k.title}: ${k.content}`).join(' | ')}`;
+- Respuestas breves (máx 2-3 párrafos).
+- Usa **negritas** para datos importantes.
+- Si no sabes algo, indica que contacten por el formulario.
+CONOCIMIENTO: ${knowledgeStr}`;
 
-    // IMPORTANTE: El historial DEBE empezar con un rol 'user'. 
-    // Filtramos los mensajes iniciales del modelo si no hay un usuario antes.
-    let validHistory = [];
-    let foundFirstUser = false;
+  // Filtrar historial: Debe empezar por 'user' y alternar roles
+  const contents = [];
+  let lastRole = null;
 
-    for (const msg of history) {
-      if (msg.role === 'user') foundFirstUser = true;
-      if (foundFirstUser) {
-        validHistory.push({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.text }]
-        });
-      }
-    }
-
-    // Si por alguna razón el historial está vacío (no debería), enviamos solo el último mensaje
-    if (validHistory.length === 0) {
-      validHistory = [{ role: 'user', parts: [{ text: history[history.length - 1].text }] }];
-    }
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: validHistory,
-      config: {
-        systemInstruction,
-        temperature: 0.7
-      }
+  for (const msg of history) {
+    const role = msg.role === 'user' ? 'user' : 'model';
+    // Saltamos mensajes del bot al inicio
+    if (contents.length === 0 && role === 'model') continue;
+    // Evitamos roles duplicados seguidos
+    if (role === lastRole) continue;
+    
+    contents.push({
+      role: role,
+      parts: [{ text: msg.text }]
     });
-
-    return response.text;
-  } catch (e) {
-    console.error("Error detallado de la API:", e);
-    throw e;
+    lastRole = role;
   }
+
+  // Si por algún motivo el filtrado falla, enviamos el último mensaje del usuario
+  if (contents.length === 0) {
+    contents.push({ role: 'user', parts: [{ text: history[history.length - 1].text }] });
+  }
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: contents,
+    config: {
+      systemInstruction,
+      temperature: 0.7
+    }
+  });
+
+  return response.text;
 };
 
 export const ChatWidget = ({ knowledge, isEmbedded }) => {
@@ -120,7 +100,6 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef(null);
   const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
-
   const t = UI_TEXT[lang] || UI_TEXT.es;
 
   useEffect(() => {
@@ -153,9 +132,8 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       const reply = await askAI(newMsgs, knowledge, lang);
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
-      let errorText = t.error;
-      if (err.message === "API_KEY_MISSING") errorText = "Error: API Key no configurada.";
-      setMessages(prev => [...prev, { role: 'model', text: errorText }]);
+      console.error("Chat Error:", err);
+      setMessages(prev => [...prev, { role: 'model', text: t.error }]);
     } finally {
       setIsTyping(false);
     }
