@@ -28,14 +28,9 @@ const QUICK_TIPS = {
 };
 
 const UI_TEXT = {
-  es: { book: "Reservar ahora", write: "Escribe..." },
-  en: { book: "Book now", write: "Write..." },
-  ca: { book: "Reservar ara", write: "Escriu..." },
-  de: { book: "Jetzt buchen", write: "Schreiben..." },
-  it: { book: "Prenota ora", write: "Scrivi..." },
-  fr: { book: "Réserver", write: "Écrire..." },
-  nl: { book: "Nu boeken", write: "Schrijven..." },
-  pt: { book: "Reservar agora", write: "Escrever..." }
+  es: { book: "Reservar ahora", write: "Escribe...", error: "Error de conexión. Inténtalo de nuevo." },
+  en: { book: "Book now", write: "Write...", error: "Connection error. Please try again." },
+  ca: { book: "Reservar ara", write: "Escriu...", error: "Error de connexió. Torna-ho a provar." }
 };
 
 const BOOKING_URL = "https://booking.redforts.com/e4mh/";
@@ -57,24 +52,45 @@ const FormattedMessage = ({ text }) => {
 
 const askAI = async (history, knowledge, lang) => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === "undefined") throw new Error("API_KEY_MISSING");
+  if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
+    throw new Error("API_KEY_MISSING");
+  }
 
   try {
     const ai = new GoogleGenAI({ apiKey });
+    
     const systemInstruction = `Eres el asistente virtual del Hostal Levante (Barcelona). 
 Idioma: ${lang}. 
-Eres amable, conciso y actúas como un recepcionista experto.
-ESTRUCTURA DE RESPUESTA: Párrafos cortos, un solo salto de línea, usa "•" para listas y **negritas** para claves.
-CONOCIMIENTO: ${knowledge.map(k => `${k.title}: ${k.content}`).join(' | ')}`;
+Eres amable, servicial y actúas como un recepcionista experto.
+NORMAS: 
+- Respuestas concisas (máximo 3 párrafos).
+- Usa **negritas** para información crítica.
+- Usa "•" para listas.
+- Si no sabes algo, invita a usar el formulario de contacto.
+CONOCIMIENTO ACTUALIZADO: ${knowledge.map(k => `${k.title}: ${k.content}`).join(' | ')}`;
 
-    const chat = ai.chats.create({
+    // Mapeamos el historial al formato que espera el SDK
+    const contents = history.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.text }]
+    }));
+
+    const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      config: { systemInstruction, temperature: 0.5 }
+      contents: contents,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40
+      }
     });
 
-    const response = await chat.sendMessage({ message: history[history.length - 1].text });
     return response.text;
-  } catch (e) { throw e; }
+  } catch (e) {
+    console.error("AI Error:", e);
+    throw e;
+  }
 };
 
 export const ChatWidget = ({ knowledge, isEmbedded }) => {
@@ -105,16 +121,24 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   const onSend = async (customText) => {
     const text = typeof customText === 'string' ? customText : input;
     if (!text.trim() || isTyping) return;
-    const newMsgs = [...messages, { role: 'user', text }];
+
+    const userMsg = { role: 'user', text };
+    const newMsgs = [...messages, userMsg];
+    
     setMessages(newMsgs);
     setInput('');
     setIsTyping(true);
+
     try {
       const reply = await askAI(newMsgs, knowledge, lang);
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'model', text: "Error." }]);
-    } finally { setIsTyping(false); }
+      let errorText = t.error;
+      if (err.message === "API_KEY_MISSING") errorText = "Error: Configuración de API no encontrada.";
+      setMessages(prev => [...prev, { role: 'model', text: errorText }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   if (!isOpen && isEmbedded) return html`
@@ -151,11 +175,25 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
             `}
           </div>
         `)}
-        ${isTyping && html`<div className="text-xs text-slate-400 animate-pulse mt-2"> Escribiendo...</div>`}
+        ${isTyping && html`
+          <div className="flex items-center space-x-2 mt-2 ml-1">
+             <div className="flex space-x-1">
+                <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style=${{animationDelay: '0ms'}}></div>
+                <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style=${{animationDelay: '150ms'}}></div>
+                <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style=${{animationDelay: '300ms'}}></div>
+             </div>
+          </div>
+        `}
       </div>
       <div className="p-4 bg-white border-t flex space-x-2 rounded-b-[2rem]">
-        <input value=${input} onChange=${e => setInput(e.target.value)} onKeyDown=${e => e.key === 'Enter' && onSend()} placeholder=${t.write} className="flex-1 bg-slate-100 rounded-xl px-4 py-2 text-sm outline-none" />
-        <button onClick=${onSend} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center"><i className="fas fa-paper-plane"></i></button>
+        <input 
+          value=${input} 
+          onChange=${e => setInput(e.target.value)} 
+          onKeyDown=${e => e.key === 'Enter' && onSend()} 
+          placeholder=${t.write} 
+          className="flex-1 bg-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1e3a8a]/20" 
+        />
+        <button onClick=${onSend} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"><i className="fas fa-paper-plane"></i></button>
       </div>
     </div>
   `;
