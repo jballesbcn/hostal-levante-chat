@@ -23,34 +23,29 @@ const UI_TEXT = {
   ca: { book: "Reservar", write: "Escriu...", error: "Error de comunicació" }
 };
 
-const askAI = async (messages, knowledge, lang) => {
+const askAI = async (text, knowledge, lang) => {
+  // Inicialización segura de la API
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const knowledgeBase = knowledge.map(k => `${k.title}: ${k.content}`).join('\n');
   const systemInstruction = `Eres el asistente oficial del Hostal Levante en Barcelona. Idioma: ${lang}. 
-  Responde de forma amable, servicial y concisa. Máximo 2 párrafos cortos.
-  Usa **negritas** para datos importantes.
+  Responde de forma amable, servicial y muy concisa (máximo 2 párrafos).
+  Usa **negritas** para datos importantes como horarios o direcciones.
   
-  CONOCIMIENTO DEL HOSTAL:
+  INFORMACIÓN DEL HOSTAL:
   ${knowledgeBase}`;
 
-  // REGLA DE ORO GEMINI: El historial debe empezar por 'user'.
-  // Filtramos el saludo del bot para el API.
-  const historyForAPI = [];
-  for (const m of messages) {
-    if (historyForAPI.length === 0 && m.role === 'model') continue;
-    historyForAPI.push({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.text }]
-    });
-  }
-
+  // Enviamos solo el mensaje actual con la instrucción de sistema para evitar errores de secuencia de historial
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: historyForAPI,
-    config: { systemInstruction, temperature: 0.7 }
+    contents: [{ role: 'user', parts: [{ text }] }],
+    config: { 
+      systemInstruction,
+      temperature: 0.7 
+    }
   });
 
+  if (!response || !response.text) throw new Error("Empty response");
   return response.text;
 };
 
@@ -64,6 +59,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
   const t = UI_TEXT[lang] || UI_TEXT.es;
 
   useEffect(() => {
+    // Mensaje inicial de bienvenida
     setMessages([{ role: 'model', text: GREETINGS[lang] || GREETINGS.es, isGreeting: true }]);
   }, [lang]);
 
@@ -77,31 +73,31 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     const text = typeof customText === 'string' ? customText : input;
     if (!text.trim() || isTyping) return;
 
+    // Actualizar UI con mensaje del usuario
     const userMsg = { role: 'user', text };
-    const newHistory = [...messages, userMsg];
-    
-    setMessages(newHistory);
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
 
     try {
-      const reply = await askAI(newHistory, knowledge, lang);
+      // Llamada a la IA
+      const reply = await askAI(text, knowledge, lang);
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
-      console.error("Gemini API Error:", err);
-      setMessages(prev => [...prev, { role: 'model', text: `${t.error}. Por favor, vuelve a intentarlo.` }]);
+      console.error("Gemini Error:", err);
+      setMessages(prev => [...prev, { role: 'model', text: `${t.error}. Por favor, inténtalo de nuevo.` }]);
     } finally {
       setIsTyping(false);
     }
   };
 
+  const openBooking = () => {
+    window.open('https://www.hostallevante.com/reserva', '_blank');
+  };
+
   const toggleChat = (state) => {
     setIsOpen(state);
     if (isEmbedded) window.parent.postMessage({ type: 'chatbot_state', open: state }, '*');
-  };
-
-  const openBooking = () => {
-    window.open('https://www.hostallevante.com/reserva', '_blank');
   };
 
   if (!isOpen && isEmbedded) return html`
@@ -114,7 +110,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
 
   return html`
     <div className=${`flex flex-col bg-white shadow-2xl animate-chat overflow-hidden ${isEmbedded ? 'w-full h-full' : 'fixed bottom-5 right-5 w-[380px] h-[600px] rounded-[2rem] border'}`}>
-      <!-- Header con Botón de Reserva -->
+      <!-- Header con Botón de Reserva Reincorporado -->
       <div className="bg-[#1e3a8a] p-5 text-white flex justify-between items-center rounded-t-[2rem]">
         <div className="flex flex-col">
           <span className="font-bold text-sm leading-none mb-1 tracking-tight">Hostal Levante</span>
@@ -134,7 +130,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         </div>
       </div>
       
-      <!-- Mensajes -->
+      <!-- Cuerpo de Mensajes -->
       <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 hide-scroll">
         ${messages.map((m, i) => html`
           <div key=${i} className=${`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -163,7 +159,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         `}
       </div>
 
-      <!-- Input -->
+      <!-- Input de Texto -->
       <div className="p-4 bg-white border-t rounded-b-[2rem]">
         <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl items-center focus-within:ring-2 focus-within:ring-[#1e3a8a]/20 transition-all shadow-inner">
           <input 

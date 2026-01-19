@@ -26,19 +26,23 @@ const AdminPanel = ({ knowledge }) => {
            </div>
         </div>
         <div className="bg-slate-100 p-4 rounded-2xl text-xs text-slate-500 italic">
-          Vista previa del chatbot a la derecha/abajo.
+          Vista previa del chatbot a la derecha/abajo. La configuración del conocimiento está activa.
         </div>
       </div>
-      <${ChatWidget} knowledge=${knowledge} isEmbedded=${false} />
+      <!-- Vista previa del chat para el administrador -->
+      <div className="relative h-[600px] border rounded-[2rem] overflow-hidden shadow-inner bg-slate-200/50">
+        <${ChatWidget} knowledge=${knowledge} isEmbedded=${true} />
+      </div>
     </div>
   `;
 };
 
 const App = () => {
   const [knowledge] = useState([
-    { title: 'Hostal Levante', content: 'Ubicado en Baixada de Sant Miquel 2, Barcelona. Cerca de Las Ramblas y la Catedral.' },
-    { title: 'Check-in', content: 'A partir de las 14:00h. Recepción 24 horas.' },
-    { title: 'Servicios', content: 'Wifi gratuito, aire acondicionado, consigna de equipaje.' }
+    { title: 'Hostal Levante', content: 'Ubicado en Baixada de Sant Miquel 2, Barcelona. Cerca de Las Ramblas y la Catedral de Barcelona.' },
+    { title: 'Check-in y Recepción', content: 'El check-in es a partir de las 14:00h. Tenemos recepción abierta las 24 horas del día.' },
+    { title: 'Wifi y Clima', content: 'Ofrecemos Wifi gratuito en todas las habitaciones y áreas comunes. Todas las habitaciones tienen aire acondicionado y calefacción.' },
+    { title: 'Ubicación', content: 'Estamos en pleno Barrio Gótico, a 2 minutos a pie de la Plaza Sant Jaume y a 5 minutos de Las Ramblas.' }
   ]);
   
   const params = new URLSearchParams(window.location.search);
