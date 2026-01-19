@@ -18,35 +18,34 @@ const QUICK_TIPS = {
 };
 
 const UI_TEXT = {
-  es: { book: "Reservar ahora", write: "Escribe...", error: "Error de conexión" },
-  en: { book: "Book now", write: "Type...", error: "Connection error" },
-  ca: { book: "Reservar ara", write: "Escriu...", error: "Error de connexió" }
+  es: { book: "Reservar", write: "Escribe...", error: "Error de conexión" },
+  en: { book: "Book", write: "Type...", error: "Connection error" },
+  ca: { book: "Reservar", write: "Escriu...", error: "Error de connexió" }
 };
 
 const askAI = async (messages, knowledge, lang) => {
-  // Inicialización siguiendo estrictamente el SDK
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const knowledgeBase = knowledge.map(k => `${k.title}: ${k.content}`).join('\n');
-  const systemInstruction = `Eres el asistente oficial del Hostal Levante en Barcelona. Idioma: ${lang}. 
-  Responde de forma amable y servicial. Usa **negritas** para información clave. 
-  Respuestas cortas (máximo 2 párrafos).
-  
-  CONTEXTO DEL HOSTAL:
-  ${knowledgeBase}`;
+  const systemInstruction = `Eres el asistente del Hostal Levante en Barcelona. Idioma: ${lang}. 
+  Responde de forma amable y muy concisa. Máximo 2 párrafos.
+  Usa **negritas** para información crítica.
+  Información relevante: ${knowledgeBase}`;
 
-  // REGLA CRÍTICA: El historial debe empezar por 'user' y alternar.
-  // Filtramos el saludo inicial si es de tipo 'model'.
-  const contents = [];
+  // Gemini exige que el primer mensaje sea del usuario. 
+  // Filtramos cualquier mensaje de 'model' que esté al principio del array.
+  const filteredContents = [];
   for (const m of messages) {
-    const role = m.role === 'user' ? 'user' : 'model';
-    if (contents.length === 0 && role === 'model') continue;
-    contents.push({ role, parts: [{ text: m.text }] });
+    if (filteredContents.length === 0 && m.role === 'model') continue;
+    filteredContents.push({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }]
+    });
   }
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: contents,
+    contents: filteredContents,
     config: {
       systemInstruction,
       temperature: 0.7,
@@ -80,18 +79,18 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     if (!text.trim() || isTyping) return;
 
     const userMsg = { role: 'user', text };
-    const currentHistory = [...messages, userMsg];
+    const newHistory = [...messages, userMsg];
     
-    setMessages(currentHistory);
+    setMessages(newHistory);
     setInput('');
     setIsTyping(true);
 
     try {
-      const reply = await askAI(currentHistory, knowledge, lang);
+      const reply = await askAI(newHistory, knowledge, lang);
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
-      console.error("Gemini Error:", err);
-      setMessages(prev => [...prev, { role: 'model', text: `${t.error}. Por favor, vuelve a intentarlo.` }]);
+      console.error("Chat Error:", err);
+      setMessages(prev => [...prev, { role: 'model', text: t.error }]);
     } finally {
       setIsTyping(false);
     }
@@ -102,26 +101,41 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     if (isEmbedded) window.parent.postMessage({ type: 'chatbot_state', open: state }, '*');
   };
 
+  const goToBooking = () => {
+    window.open('https://www.hostallevante.com/reserva', '_blank');
+  };
+
   if (!isOpen && isEmbedded) return html`
     <div className="w-full h-full flex items-center justify-center bg-transparent">
-      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform pulse-blue border-4 border-white">
+      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all border-4 border-white">
         <i className="fas fa-comments text-2xl"></i>
       </button>
     </div>
   `;
 
   return html`
-    <div className=${`flex flex-col bg-white shadow-2xl animate-chat ${isEmbedded ? 'w-full h-full' : 'fixed bottom-5 right-5 w-[380px] h-[600px] rounded-[2rem] border'}`}>
+    <div className=${`flex flex-col bg-white shadow-2xl animate-chat ${isEmbedded ? 'w-full h-full' : 'fixed bottom-5 right-5 w-[380px] h-[600px] rounded-[2rem] border overflow-hidden'}`}>
+      <!-- Header con Botón de Reserva -->
       <div className="bg-[#1e3a8a] p-5 text-white flex justify-between items-center rounded-t-[2rem]">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          <span className="font-bold text-sm tracking-wide leading-none">Asistente Levante</span>
+        <div className="flex flex-col">
+          <span className="font-bold text-sm leading-none mb-1">Hostal Levante</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-[10px] opacity-80 uppercase tracking-widest font-bold">Online</span>
+          </div>
         </div>
-        <button onClick=${() => toggleChat(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
-          <i className="fas fa-times"></i>
-        </button>
+        
+        <div className="flex items-center gap-2">
+          <button onClick=${goToBooking} className="bg-white text-[#1e3a8a] px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-slate-100 transition-colors shadow-sm">
+            <i className="fas fa-calendar-alt mr-1"></i> ${t.book}
+          </button>
+          <button onClick=${() => toggleChat(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
       </div>
       
+      <!-- Messages -->
       <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 hide-scroll">
         ${messages.map((m, i) => html`
           <div key=${i} className=${`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -152,6 +166,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         `}
       </div>
 
+      <!-- Input -->
       <div className="p-4 bg-white border-t rounded-b-[2rem]">
         <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl items-center focus-within:ring-2 focus-within:ring-[#1e3a8a]/20 transition-all shadow-inner">
           <input 
@@ -165,7 +180,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
           <button 
             onClick=${onSend} 
             disabled=${isTyping || !input.trim()}
-            className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-blue-900/20">
+            className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
             <i className=${`fas ${isTyping ? 'fa-circle-notch animate-spin' : 'fa-paper-plane'}`}></i>
           </button>
         </div>
