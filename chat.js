@@ -51,8 +51,16 @@ const FormattedMessage = ({ text }) => {
 };
 
 const askAI = async (history, knowledge, lang) => {
-  const apiKey = process.env.API_KEY;
+  // Verificación robusta de la API KEY
+  let apiKey = "";
+  try {
+    apiKey = process.env.API_KEY;
+  } catch (e) {
+    console.warn("process.env no está definido, buscando alternativa...");
+  }
+
   if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
+    console.error("API Key faltante o inválida");
     throw new Error("API_KEY_MISSING");
   }
 
@@ -67,28 +75,40 @@ NORMAS:
 - Usa **negritas** para información crítica.
 - Usa "•" para listas.
 - Si no sabes algo, invita a usar el formulario de contacto.
-CONOCIMIENTO ACTUALIZADO: ${knowledge.map(k => `${k.title}: ${k.content}`).join(' | ')}`;
+CONOCIMIENTO: ${knowledge.map(k => `${k.title}: ${k.content}`).join(' | ')}`;
 
-    // Mapeamos el historial al formato que espera el SDK
-    const contents = history.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.text }]
-    }));
+    // IMPORTANTE: El historial DEBE empezar con un rol 'user'. 
+    // Filtramos los mensajes iniciales del modelo si no hay un usuario antes.
+    let validHistory = [];
+    let foundFirstUser = false;
+
+    for (const msg of history) {
+      if (msg.role === 'user') foundFirstUser = true;
+      if (foundFirstUser) {
+        validHistory.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text }]
+        });
+      }
+    }
+
+    // Si por alguna razón el historial está vacío (no debería), enviamos solo el último mensaje
+    if (validHistory.length === 0) {
+      validHistory = [{ role: 'user', parts: [{ text: history[history.length - 1].text }] }];
+    }
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: contents,
+      contents: validHistory,
       config: {
         systemInstruction,
-        temperature: 0.7,
-        topP: 0.95,
-        topK: 40
+        temperature: 0.7
       }
     });
 
     return response.text;
   } catch (e) {
-    console.error("AI Error:", e);
+    console.error("Error detallado de la API:", e);
     throw e;
   }
 };
@@ -134,7 +154,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
       let errorText = t.error;
-      if (err.message === "API_KEY_MISSING") errorText = "Error: Configuración de API no encontrada.";
+      if (err.message === "API_KEY_MISSING") errorText = "Error: API Key no configurada.";
       setMessages(prev => [...prev, { role: 'model', text: errorText }]);
     } finally {
       setIsTyping(false);
