@@ -23,9 +23,9 @@ const QUICK_TIPS = {
 };
 
 const UI_TEXT = {
-  es: { book: "Reservar ahora", write: "Escribe...", error: "Error de conexión", missingKey: "API Key no detectada. Por favor, verifica la configuración del entorno." },
-  en: { book: "Book now", write: "Type...", error: "Connection error", missingKey: "API Key not detected. Please verify environment configuration." },
-  ca: { book: "Reservar ara", write: "Escriu...", error: "Error de connexió", missingKey: "API Key no detectada. Per favor, verifica la configuració." }
+  es: { book: "Reservar ahora", write: "Escribe...", error: "Error de conexión" },
+  en: { book: "Book now", write: "Type...", error: "Connection error" },
+  ca: { book: "Reservar ara", write: "Escriu...", error: "Error de connexió" }
 };
 
 const BOOKING_URL = "https://booking.redforts.com/e4mh/";
@@ -46,25 +46,16 @@ const FormattedMessage = ({ text }) => {
 };
 
 const askAI = async (history, knowledge, lang) => {
-  const apiKey = process.env.API_KEY;
-  const t = UI_TEXT[lang] || UI_TEXT.es;
-
-  // Validación de la clave antes de inicializar
-  if (!apiKey || apiKey === 'undefined' || apiKey === '') {
-    throw new Error(t.missingKey);
-  }
-
-  // Inicialización usando exactamente process.env.API_KEY
-  const ai = new GoogleGenAI({ apiKey });
+  // Uso DIRECTO de process.env.API_KEY tal como exige la guía para asegurar la inyección
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const knowledgeStr = knowledge.map(k => `${k.title}: ${k.content}`).join(' | ');
   const systemInstruction = `Eres el asistente oficial del Hostal Levante en Barcelona. Idioma: ${lang}. 
 Eres amable y servicial. 
 NORMAS: 
-- Respuestas breves (máx 2-3 párrafos).
-- Usa **negritas** para datos importantes.
-- Si no sabes algo, indica que contacten por el formulario de la web.
-CONOCIMIENTO ACTUAL: ${knowledgeStr}`;
+- Respuestas breves (máx 2 párrafos).
+- Usa **negritas** para datos clave.
+- Conocimiento: ${knowledgeStr}`;
 
   const contents = [];
   let lastRole = null;
@@ -86,7 +77,7 @@ CONOCIMIENTO ACTUAL: ${knowledgeStr}`;
     if (lastUserMsg) {
       contents.push({ role: 'user', parts: [{ text: lastUserMsg.text }] });
     } else {
-      throw new Error("No hay mensajes de usuario.");
+      throw new Error("No hay mensajes");
     }
   }
 
@@ -96,14 +87,8 @@ CONOCIMIENTO ACTUAL: ${knowledgeStr}`;
     config: {
       systemInstruction,
       temperature: 0.7,
-      topP: 0.95,
-      topK: 40
     }
   });
-
-  if (!response || !response.text) {
-    throw new Error("No se recibió respuesta del modelo.");
-  }
 
   return response.text;
 };
@@ -148,8 +133,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (err) {
       console.error("Gemini Error:", err);
-      const errorMsg = err.message || "Error desconocido";
-      setMessages(prev => [...prev, { role: 'model', text: `${t.error}: ${errorMsg}` }]);
+      setMessages(prev => [...prev, { role: 'model', text: `${t.error}. Por favor, contacta con nosotros directamente si el problema persiste.` }]);
     } finally {
       setIsTyping(false);
     }
@@ -196,7 +180,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
         ${isTyping && html`
           <div className="flex items-center space-x-2 mt-2 ml-1">
              <div className="flex space-x-1 bg-white p-2 rounded-full border shadow-sm">
-                <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '0ms'}}></div>
+                <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce"></div>
                 <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '150ms'}}></div>
                 <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce" style=${{animationDelay: '300ms'}}></div>
              </div>
@@ -211,7 +195,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
           onKeyDown=${e => e.key === 'Enter' && onSend()} 
           placeholder=${t.write} 
           disabled=${isTyping}
-          className="flex-1 bg-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1e3a8a]/20 transition-all disabled:opacity-50" 
+          className="flex-1 bg-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1e3a8a]/20 transition-all" 
         />
         <button 
           onClick=${onSend} 
