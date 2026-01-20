@@ -97,7 +97,7 @@ const TEXTS = {
   },
   pt: { 
     title: "Contato", 
-    subtitle: "Responderemos à sua dúvida o más breve posible.",
+    subtitle: "Responderemos à sua duda o más breve posible.",
     name: "Nome", 
     email: "Email", 
     whatsapp: "WhatsApp",
@@ -135,12 +135,13 @@ export const ContactForm = () => {
   const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
   const t = TEXTS[lang] || TEXTS.es;
 
+  // Lógica de cuenta atrás y redirección
   useEffect(() => {
     let timer;
     if (countdown !== null && countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
     } else if (countdown === 0) {
-      // CORRECCIÓN: Redirigir a la URL absoluta del hostal para evitar el index.html local
+      // Redirección forzada a la URL absoluta del Hostal
       window.top.location.href = 'https://www.hostallevante.com/index.html';
     }
     return () => clearTimeout(timer);
@@ -148,7 +149,7 @@ export const ContactForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isHuman) return;
+    if (!isHuman || status === 'loading') return;
     
     setStatus('loading');
     try {
@@ -161,21 +162,21 @@ export const ContactForm = () => {
       const result = await response.json();
       if (result.status === 'success') {
         setStatus('success');
-        setFormData({ name: '', email: '', whatsapp: '', message: '' });
-        setIsHuman(false);
-        setCountdown(5);
+        setCountdown(5); // Inicia la cuenta atrás de 5 segundos
       } else {
-        throw new Error(result.message);
+        throw new Error(result.message || 'Error desconocido');
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error envío:", err);
       setStatus('error');
+      // Reset automático del estado de error tras 3 segundos para dejar reintentar
+      setTimeout(() => setStatus('idle'), 3000);
     }
   };
 
   return html`
-    <div className="w-full h-full bg-gradient-to-b from-[#f1f5f9] to-[#cbd5e1] p-8 font-sans overflow-y-auto hide-scroll">
-      <div className="max-w-2xl mx-auto bg-white/80 backdrop-blur-md p-8 sm:p-10 rounded-[2.5rem] shadow-xl border border-white/50">
+    <div className="w-full h-full bg-white p-8 font-sans overflow-y-auto hide-scroll">
+      <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-black text-[#1e3a8a] mb-1 flex items-center gap-3">
             <i className="fas fa-paper-plane"></i> ${t.title}
         </h1>
@@ -189,7 +190,7 @@ export const ContactForm = () => {
                     required
                     value=${formData.name}
                     onChange=${e => setFormData({...formData, name: e.target.value})}
-                    className="w-full border-b-2 border-slate-200 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
+                    className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
                 />
               </div>
               
@@ -200,7 +201,7 @@ export const ContactForm = () => {
                     type="email"
                     value=${formData.email}
                     onChange=${e => setFormData({...formData, email: e.target.value})}
-                    className="w-full border-b-2 border-slate-200 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
+                    className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
                 />
               </div>
             </div>
@@ -215,7 +216,7 @@ export const ContactForm = () => {
                   value=${formData.whatsapp}
                   onChange=${e => setFormData({...formData, whatsapp: e.target.value})}
                   placeholder="+34 ..."
-                  className="w-full border-b-2 border-slate-200 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
+                  className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
               />
             </div>
 
@@ -225,11 +226,12 @@ export const ContactForm = () => {
                   required
                   value=${formData.message}
                   onChange=${e => setFormData({...formData, message: e.target.value})}
-                  className="w-full border-2 border-slate-200 rounded-2xl p-4 text-sm outline-none focus:border-[#1e3a8a] h-32 transition-all resize-none bg-slate-50/50 shadow-inner"
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none focus:border-[#1e3a8a] h-32 transition-all resize-none bg-slate-50 shadow-inner"
               ></textarea>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-white/50 border border-slate-200 rounded-xl max-w-sm shadow-sm">
+            <!-- reCAPTCHA Mock -->
+            <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
                 <div className="flex items-center gap-3">
                     <input 
                         type="checkbox" 
@@ -256,10 +258,11 @@ export const ContactForm = () => {
                 ${status === 'loading' ? t.sending : t.send}
             </button>
 
+            <!-- Pantalla de Éxito y Cuenta Atrás -->
             ${status === 'success' && html`
-              <div className="fixed inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center p-8 animate-fadeIn">
+              <div className="fixed inset-0 bg-white z-[999] flex items-center justify-center p-8 animate-fadeIn">
                 <div className="text-center space-y-6 max-w-sm">
-                  <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-green-900/10 animate-bounce-short">
+                  <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg animate-bounce-short">
                     <i className="fas fa-check text-4xl"></i>
                   </div>
                   <div>
@@ -287,7 +290,7 @@ export const ContactForm = () => {
       </div>
       <style>
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes bounce-short { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .animate-bounce-short { animation: bounce-short 1.5s infinite ease-in-out; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
