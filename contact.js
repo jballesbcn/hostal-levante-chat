@@ -10,9 +10,10 @@ const TEXTS = {
     subtitle: "Responderemos a tu consulta lo antes posible.",
     name: "Nombre", 
     email: "Email", 
-    whatsapp: "WhatsApp / Teléfono",
+    whatsapp: "WhatsApp",
     optional: "(opcional)",
     message: "Mensaje", 
+    captcha: "No soy un robot",
     send: "Enviar Mensaje", 
     sending: "Enviando...", 
     success: "¡Mensaje enviado con éxito!", 
@@ -23,9 +24,10 @@ const TEXTS = {
     subtitle: "We will reply to your inquiry as soon as possible.",
     name: "Name", 
     email: "Email", 
-    whatsapp: "WhatsApp / Phone",
+    whatsapp: "WhatsApp",
     optional: "(optional)",
     message: "Message", 
+    captcha: "I am not a robot",
     send: "Send Message", 
     sending: "Sending...", 
     success: "Message sent successfully!", 
@@ -36,9 +38,10 @@ const TEXTS = {
     subtitle: "Risponderemo alla tua richiesta il prima possibile.",
     name: "Nome", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telefono",
+    whatsapp: "WhatsApp",
     optional: "(opzionale)",
     message: "Messaggio", 
+    captcha: "Non sono un robot",
     send: "Invia Messaggio", 
     sending: "Invio...", 
     success: "Messaggio inviato con successo!", 
@@ -49,9 +52,10 @@ const TEXTS = {
     subtitle: "Wir werden Ihre Anfrage so schnell wie möglich beantworten.",
     name: "Name", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telefon",
+    whatsapp: "WhatsApp",
     optional: "(optional)",
     message: "Nachricht", 
+    captcha: "Ich bin kein Roboter",
     send: "Nachricht Senden", 
     sending: "Wird gesendet...", 
     success: "Nachricht erfolgreich gesendet!", 
@@ -62,9 +66,10 @@ const TEXTS = {
     subtitle: "Nous répondrons a votre demande dans les plus brefs délais.",
     name: "Nom", 
     email: "Email", 
-    whatsapp: "WhatsApp / Téléphone",
+    whatsapp: "WhatsApp",
     optional: "(optionnel)",
     message: "Message", 
+    captcha: "Je ne suis pas un robot",
     send: "Envoyer Message", 
     sending: "Envoi...", 
     success: "Message envoyé avec succès !", 
@@ -75,9 +80,10 @@ const TEXTS = {
     subtitle: "Wij zullen uw aanvraag zo snel mogelijk beantwoorden.",
     name: "Naam", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telefoon",
+    whatsapp: "WhatsApp",
     optional: "(optioneel)",
     message: "Bericht", 
+    captcha: "Ik ben geen robot",
     send: "Bericht Verzenden", 
     sending: "Verzenden...", 
     success: "Bericht succesvol verzonden!", 
@@ -85,15 +91,16 @@ const TEXTS = {
   },
   pt: { 
     title: "Contato", 
-    subtitle: "Responderemos à sua dúvida o más breve possível.",
+    subtitle: "Responderemos à sua dúvida o más breve posible.",
     name: "Nome", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telefone",
+    whatsapp: "WhatsApp",
     optional: "(opcional)",
     message: "Mensagem", 
+    captcha: "Não sou um robô",
     send: "Enviar Mensagem", 
     sending: "Enviando...", 
-    success: "Mensagem enviada com sucesso!", 
+    success: "Mensagem enviada con sucesso!", 
     error: "Erro ao enviar a mensaje." 
   },
   ca: { 
@@ -101,9 +108,10 @@ const TEXTS = {
     subtitle: "Respondrem a la teva consulta el més aviat possible.",
     name: "Nom", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telèfon",
+    whatsapp: "WhatsApp",
     optional: "(opcional)",
     message: "Missatge", 
+    captcha: "No soc un robot",
     send: "Enviar Missatge", 
     sending: "Enviant...", 
     success: "Missatge enviat amb èxit!", 
@@ -113,12 +121,15 @@ const TEXTS = {
 
 export const ContactForm = () => {
   const [formData, setFormData] = useState({ name: '', email: '', whatsapp: '', message: '' });
+  const [isHuman, setIsHuman] = useState(false);
   const [status, setStatus] = useState('idle'); // idle, loading, success, error
   const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
   const t = TEXTS[lang] || TEXTS.es;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isHuman) return;
+    
     setStatus('loading');
     try {
       const response = await fetch('send_email.php', {
@@ -130,6 +141,7 @@ export const ContactForm = () => {
       if (result.status === 'success') {
         setStatus('success');
         setFormData({ name: '', email: '', whatsapp: '', message: '' });
+        setIsHuman(false);
       } else {
         throw new Error(result.message);
       }
@@ -141,14 +153,14 @@ export const ContactForm = () => {
 
   return html`
     <div className="w-full h-full bg-white p-8 font-sans overflow-y-auto hide-scroll">
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-black text-[#1e3a8a] mb-1 flex items-center gap-3">
             <i className="fas fa-paper-plane"></i> ${t.title}
         </h1>
         <p className="text-slate-400 text-xs mb-8 font-medium">${t.subtitle}</p>
         
         <form onSubmit=${handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.name}</label>
                 <input 
@@ -194,10 +206,29 @@ export const ContactForm = () => {
                   className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none focus:border-[#1e3a8a] h-32 transition-all resize-none bg-slate-50/30 shadow-inner"
               ></textarea>
             </div>
+
+            <!-- Simple reCAPTCHA style checkbox -->
+            <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
+                <div className="flex items-center gap-3">
+                    <input 
+                        type="checkbox" 
+                        required
+                        id="captcha"
+                        checked=${isHuman}
+                        onChange=${e => setIsHuman(e.target.checked)}
+                        className="w-5 h-5 rounded border-slate-300 text-[#1e3a8a] focus:ring-[#1e3a8a]"
+                    />
+                    <label htmlFor="captcha" className="text-xs font-bold text-slate-600 cursor-pointer select-none">${t.captcha}</label>
+                </div>
+                <div className="flex flex-col items-center">
+                    <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" className="w-8 h-8 grayscale opacity-50" alt="reCAPTCHA" />
+                    <span className="text-[7px] text-slate-400 font-bold uppercase mt-1">reCAPTCHA</span>
+                </div>
+            </div>
             
             <button 
                 type="submit"
-                disabled=${status === 'loading'}
+                disabled=${status === 'loading' || !isHuman}
                 className="w-full bg-[#1e3a8a] text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-900/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
                 ${status === 'loading' ? html`<i className="fas fa-circle-notch animate-spin"></i>` : ''}
