@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import htm from 'htm';
 
 const html = htm.bind(React.createElement);
@@ -17,6 +17,7 @@ const TEXTS = {
     send: "Enviar Mensaje", 
     sending: "Enviando...", 
     success: "¡Mensaje enviado con éxito!", 
+    redirect: "Redirigiendo a la página de inicio en",
     error: "Error al enviar el mensaje." 
   },
   en: { 
@@ -31,6 +32,7 @@ const TEXTS = {
     send: "Send Message", 
     sending: "Sending...", 
     success: "Message sent successfully!", 
+    redirect: "Redirecting to home page in",
     error: "Error sending message." 
   },
   it: { 
@@ -45,6 +47,7 @@ const TEXTS = {
     send: "Invia Messaggio", 
     sending: "Invio...", 
     success: "Messaggio inviato con successo!", 
+    redirect: "Reindirizzamento alla home page tra",
     error: "Errore durante l'invio." 
   },
   de: { 
@@ -59,6 +62,7 @@ const TEXTS = {
     send: "Nachricht Senden", 
     sending: "Wird gesendet...", 
     success: "Nachricht erfolgreich gesendet!", 
+    redirect: "Weiterleitung zur Startseite in",
     error: "Fehler beim Senden." 
   },
   fr: { 
@@ -73,6 +77,7 @@ const TEXTS = {
     send: "Envoyer Message", 
     sending: "Envoi...", 
     success: "Message envoyé avec succès !", 
+    redirect: "Redirection vers l'accueil dans",
     error: "Erreur lors de l'envoi." 
   },
   nl: { 
@@ -83,10 +88,11 @@ const TEXTS = {
     whatsapp: "WhatsApp",
     optional: "(optioneel)",
     message: "Bericht", 
-    captcha: "Ik ben geen robot",
+    captcha: "Ik bin geen robot",
     send: "Bericht Verzenden", 
     sending: "Verzenden...", 
     success: "Bericht succesvol verzonden!", 
+    redirect: "Doorsturen naar home in",
     error: "Fout bij verzenden." 
   },
   pt: { 
@@ -101,6 +107,7 @@ const TEXTS = {
     send: "Enviar Mensagem", 
     sending: "Enviando...", 
     success: "Mensagem enviada con sucesso!", 
+    redirect: "Redirecionando para o início em",
     error: "Erro ao enviar a mensaje." 
   },
   ca: { 
@@ -115,6 +122,7 @@ const TEXTS = {
     send: "Enviar Missatge", 
     sending: "Enviant...", 
     success: "Missatge enviat amb èxit!", 
+    redirect: "Redirigint a la pàgina d'inici en",
     error: "Error en enviar el missatge." 
   }
 };
@@ -123,8 +131,20 @@ export const ContactForm = () => {
   const [formData, setFormData] = useState({ name: '', email: '', whatsapp: '', message: '' });
   const [isHuman, setIsHuman] = useState(false);
   const [status, setStatus] = useState('idle');
+  const [countdown, setCountdown] = useState(null);
   const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
   const t = TEXTS[lang] || TEXTS.es;
+
+  useEffect(() => {
+    let timer;
+    if (countdown !== null && countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (countdown === 0) {
+      // Redirigir a la home
+      window.top.location.href = 'index.html';
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -132,20 +152,18 @@ export const ContactForm = () => {
     
     setStatus('loading');
     try {
-      // IMPORTANTE: URL absoluta para que funcione desde Vercel llamando al PHP en Bluehost
       const response = await fetch('https://www.hostallevante.com/send_email.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
       
-      if (!response.ok) throw new Error('Servidor no disponible');
-      
       const result = await response.json();
       if (result.status === 'success') {
         setStatus('success');
         setFormData({ name: '', email: '', whatsapp: '', message: '' });
         setIsHuman(false);
+        setCountdown(5);
       } else {
         throw new Error(result.message);
       }
@@ -164,8 +182,8 @@ export const ContactForm = () => {
         <p className="text-slate-400 text-xs mb-8 font-medium">${t.subtitle}</p>
         
         <form onSubmit=${handleSubmit} className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-6">
-              <div className="flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+              <div className="w-full">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.name}</label>
                 <input 
                     required
@@ -175,7 +193,7 @@ export const ContactForm = () => {
                 />
               </div>
               
-              <div className="flex-1">
+              <div className="w-full">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.email}</label>
                 <input 
                     required
@@ -211,7 +229,6 @@ export const ContactForm = () => {
               ></textarea>
             </div>
 
-            <!-- reCAPTCHA Area -->
             <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
                 <div className="flex items-center gap-3">
                     <input 
@@ -232,7 +249,7 @@ export const ContactForm = () => {
             
             <button 
                 type="submit"
-                disabled=${status === 'loading' || !isHuman}
+                disabled=${status === 'loading' || !isHuman || status === 'success'}
                 className="w-full bg-[#1e3a8a] text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-900/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
                 ${status === 'loading' ? html`<i className="fas fa-circle-notch animate-spin"></i>` : ''}
@@ -240,8 +257,24 @@ export const ContactForm = () => {
             </button>
 
             ${status === 'success' && html`
-              <div className="bg-green-50 border border-green-100 p-4 rounded-2xl text-green-700 text-[11px] font-bold text-center animate-fadeIn">
-                <i className="fas fa-check-circle mr-2"></i> ${t.success}
+              <div className="fixed inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center p-8 animate-fadeIn">
+                <div className="text-center space-y-6 max-w-sm">
+                  <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-green-900/10 animate-bounce-short">
+                    <i className="fas fa-check text-4xl"></i>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-800 mb-2">${t.success}</h2>
+                    <p className="text-slate-500 text-sm font-medium">
+                      ${t.redirect} <span className="text-[#1e3a8a] font-black text-lg ml-1">${countdown}</span>s
+                    </p>
+                  </div>
+                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-[#1e3a8a] h-full transition-all duration-1000 ease-linear" 
+                      style=${{ width: `${(countdown / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
               </div>
             `}
             
@@ -253,8 +286,10 @@ export const ContactForm = () => {
         </form>
       </div>
       <style>
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes bounce-short { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .animate-bounce-short { animation: bounce-short 1.5s infinite ease-in-out; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
         .animate-shake { animation: shake 0.3s ease-in-out; }
       </style>
