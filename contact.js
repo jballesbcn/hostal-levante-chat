@@ -122,7 +122,7 @@ const TEXTS = {
 export const ContactForm = () => {
   const [formData, setFormData] = useState({ name: '', email: '', whatsapp: '', message: '' });
   const [isHuman, setIsHuman] = useState(false);
-  const [status, setStatus] = useState('idle'); // idle, loading, success, error
+  const [status, setStatus] = useState('idle');
   const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
   const t = TEXTS[lang] || TEXTS.es;
 
@@ -132,11 +132,15 @@ export const ContactForm = () => {
     
     setStatus('loading');
     try {
-      const response = await fetch('send_email.php', {
+      // IMPORTANTE: URL absoluta para que funcione desde Vercel llamando al PHP en Bluehost
+      const response = await fetch('https://www.hostallevante.com/send_email.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
+      
+      if (!response.ok) throw new Error('Servidor no disponible');
+      
       const result = await response.json();
       if (result.status === 'success') {
         setStatus('success');
@@ -160,8 +164,8 @@ export const ContactForm = () => {
         <p className="text-slate-400 text-xs mb-8 font-medium">${t.subtitle}</p>
         
         <form onSubmit=${handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
+            <div className="flex flex-col sm:flex-row gap-6">
+              <div className="flex-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.name}</label>
                 <input 
                     required
@@ -171,7 +175,7 @@ export const ContactForm = () => {
                 />
               </div>
               
-              <div>
+              <div className="flex-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.email}</label>
                 <input 
                     required
@@ -207,7 +211,7 @@ export const ContactForm = () => {
               ></textarea>
             </div>
 
-            <!-- Simple reCAPTCHA style checkbox -->
+            <!-- reCAPTCHA Area -->
             <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
                 <div className="flex items-center gap-3">
                     <input 
