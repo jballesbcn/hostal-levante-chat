@@ -10,7 +10,8 @@ const TEXTS = {
     subtitle: "Responderemos a tu consulta lo antes posible.",
     name: "Nombre", 
     email: "Email", 
-    whatsapp: "WhatsApp / Teléfono (opcional)",
+    whatsapp: "WhatsApp / Teléfono",
+    optional: "(opcional)",
     message: "Mensaje", 
     send: "Enviar Mensaje", 
     sending: "Enviando...", 
@@ -22,7 +23,8 @@ const TEXTS = {
     subtitle: "We will reply to your inquiry as soon as possible.",
     name: "Name", 
     email: "Email", 
-    whatsapp: "WhatsApp / Phone (optional)",
+    whatsapp: "WhatsApp / Phone",
+    optional: "(optional)",
     message: "Message", 
     send: "Send Message", 
     sending: "Sending...", 
@@ -34,7 +36,8 @@ const TEXTS = {
     subtitle: "Risponderemo alla tua richiesta il prima possibile.",
     name: "Nome", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telefono (opzionale)",
+    whatsapp: "WhatsApp / Telefono",
+    optional: "(opzionale)",
     message: "Messaggio", 
     send: "Invia Messaggio", 
     sending: "Invio...", 
@@ -46,7 +49,8 @@ const TEXTS = {
     subtitle: "Wir werden Ihre Anfrage so schnell wie möglich beantworten.",
     name: "Name", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telefon (optional)",
+    whatsapp: "WhatsApp / Telefon",
+    optional: "(optional)",
     message: "Nachricht", 
     send: "Nachricht Senden", 
     sending: "Wird gesendet...", 
@@ -58,7 +62,8 @@ const TEXTS = {
     subtitle: "Nous répondrons a votre demande dans les plus brefs délais.",
     name: "Nom", 
     email: "Email", 
-    whatsapp: "WhatsApp / Téléphone (optionnel)",
+    whatsapp: "WhatsApp / Téléphone",
+    optional: "(optionnel)",
     message: "Message", 
     send: "Envoyer Message", 
     sending: "Envoi...", 
@@ -70,7 +75,8 @@ const TEXTS = {
     subtitle: "Wij zullen uw aanvraag zo snel mogelijk beantwoorden.",
     name: "Naam", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telefoon (optioneel)",
+    whatsapp: "WhatsApp / Telefoon",
+    optional: "(optioneel)",
     message: "Bericht", 
     send: "Bericht Verzenden", 
     sending: "Verzenden...", 
@@ -79,22 +85,24 @@ const TEXTS = {
   },
   pt: { 
     title: "Contato", 
-    subtitle: "Responderemos à sua dúvida o mais breve possível.",
+    subtitle: "Responderemos à sua dúvida o más breve possível.",
     name: "Nome", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telefone (opcional)",
+    whatsapp: "WhatsApp / Telefone",
+    optional: "(opcional)",
     message: "Mensagem", 
     send: "Enviar Mensagem", 
     sending: "Enviando...", 
     success: "Mensagem enviada com sucesso!", 
-    error: "Erro ao enviar a mensagem." 
+    error: "Erro ao enviar a mensaje." 
   },
   ca: { 
     title: "Contacte", 
     subtitle: "Respondrem a la teva consulta el més aviat possible.",
     name: "Nom", 
     email: "Email", 
-    whatsapp: "WhatsApp / Telèfon (opcional)",
+    whatsapp: "WhatsApp / Telèfon",
+    optional: "(opcional)",
     message: "Missatge", 
     send: "Enviar Missatge", 
     sending: "Enviant...", 
@@ -133,36 +141,41 @@ export const ContactForm = () => {
 
   return html`
     <div className="w-full h-full bg-white p-8 font-sans overflow-y-auto hide-scroll">
-      <div className="max-w-md mx-auto">
-        <h1 className="text-2xl font-black text-[#1e3a8a] mb-2 flex items-center gap-3">
-            <i className="fas fa-envelope-open-text"></i> ${t.title}
+      <div className="max-w-xl mx-auto">
+        <h1 className="text-2xl font-black text-[#1e3a8a] mb-1 flex items-center gap-3">
+            <i className="fas fa-paper-plane"></i> ${t.title}
         </h1>
         <p className="text-slate-400 text-xs mb-8 font-medium">${t.subtitle}</p>
         
         <form onSubmit=${handleSubmit} className="space-y-6">
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.name}</label>
-              <input 
-                  required
-                  value=${formData.name}
-                  onChange=${e => setFormData({...formData, name: e.target.value})}
-                  className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
-              />
-            </div>
-            
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.email}</label>
-              <input 
-                  required
-                  type="email"
-                  value=${formData.email}
-                  onChange=${e => setFormData({...formData, email: e.target.value})}
-                  className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.name}</label>
+                <input 
+                    required
+                    value=${formData.name}
+                    onChange=${e => setFormData({...formData, name: e.target.value})}
+                    className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
+                />
+              </div>
+              
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.email}</label>
+                <input 
+                    required
+                    type="email"
+                    value=${formData.email}
+                    onChange=${e => setFormData({...formData, email: e.target.value})}
+                    className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
+                />
+              </div>
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">${t.whatsapp}</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2">
+                <i className="fab fa-whatsapp text-green-500 text-sm"></i>
+                ${t.whatsapp} <span className="lowercase font-normal opacity-60">${t.optional}</span>
+              </label>
               <input 
                   type="text"
                   value=${formData.whatsapp}
@@ -178,7 +191,7 @@ export const ContactForm = () => {
                   required
                   value=${formData.message}
                   onChange=${e => setFormData({...formData, message: e.target.value})}
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none focus:border-[#1e3a8a] h-32 transition-all resize-none bg-slate-50/30"
+                  className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none focus:border-[#1e3a8a] h-32 transition-all resize-none bg-slate-50/30 shadow-inner"
               ></textarea>
             </div>
             
