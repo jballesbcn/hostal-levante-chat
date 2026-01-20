@@ -140,8 +140,8 @@ export const ContactForm = () => {
     if (countdown !== null && countdown > 0) {
       timer = setTimeout(() => setCountdown(countdown - 1), 1000);
     } else if (countdown === 0) {
-      // Redirigir a la home
-      window.top.location.href = 'index.html';
+      // CORRECCIÓN: Redirigir a la URL absoluta del hostal para evitar el index.html local
+      window.top.location.href = 'https://www.hostallevante.com/index.html';
     }
     return () => clearTimeout(timer);
   }, [countdown]);
@@ -174,8 +174,8 @@ export const ContactForm = () => {
   };
 
   return html`
-    <div className="w-full h-full bg-white p-8 font-sans overflow-y-auto hide-scroll">
-      <div className="max-w-2xl mx-auto">
+    <div className="w-full h-full bg-gradient-to-b from-[#f1f5f9] to-[#cbd5e1] p-8 font-sans overflow-y-auto hide-scroll">
+      <div className="max-w-2xl mx-auto bg-white/80 backdrop-blur-md p-8 sm:p-10 rounded-[2.5rem] shadow-xl border border-white/50">
         <h1 className="text-2xl font-black text-[#1e3a8a] mb-1 flex items-center gap-3">
             <i className="fas fa-paper-plane"></i> ${t.title}
         </h1>
@@ -189,7 +189,7 @@ export const ContactForm = () => {
                     required
                     value=${formData.name}
                     onChange=${e => setFormData({...formData, name: e.target.value})}
-                    className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
+                    className="w-full border-b-2 border-slate-200 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
                 />
               </div>
               
@@ -200,7 +200,7 @@ export const ContactForm = () => {
                     type="email"
                     value=${formData.email}
                     onChange=${e => setFormData({...formData, email: e.target.value})}
-                    className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
+                    className="w-full border-b-2 border-slate-200 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
                 />
               </div>
             </div>
@@ -215,7 +215,7 @@ export const ContactForm = () => {
                   value=${formData.whatsapp}
                   onChange=${e => setFormData({...formData, whatsapp: e.target.value})}
                   placeholder="+34 ..."
-                  className="w-full border-b-2 border-slate-100 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
+                  className="w-full border-b-2 border-slate-200 py-2 text-sm outline-none focus:border-[#1e3a8a] transition-colors bg-transparent" 
               />
             </div>
 
@@ -225,11 +225,11 @@ export const ContactForm = () => {
                   required
                   value=${formData.message}
                   onChange=${e => setFormData({...formData, message: e.target.value})}
-                  className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none focus:border-[#1e3a8a] h-32 transition-all resize-none bg-slate-50/30 shadow-inner"
+                  className="w-full border-2 border-slate-200 rounded-2xl p-4 text-sm outline-none focus:border-[#1e3a8a] h-32 transition-all resize-none bg-slate-50/50 shadow-inner"
               ></textarea>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
+            <div className="flex items-center justify-between p-4 bg-white/50 border border-slate-200 rounded-xl max-w-sm shadow-sm">
                 <div className="flex items-center gap-3">
                     <input 
                         type="checkbox" 
