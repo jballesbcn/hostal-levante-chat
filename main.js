@@ -7,21 +7,22 @@ import { ContactForm } from './contact.js';
 
 const html = htm.bind(React.createElement);
 
-// Detección de idioma ultra-precisa para Hostal Levante
+// Detección de idioma para Hostal Levante (Ultra-precisa)
 const detectLanguage = () => {
   const validLangs = ['es', 'en', 'ca', 'fr', 'it', 'de', 'nl', 'pt'];
   
-  // 1. Prioridad: Parámetro URL explícito (?lang=en)
+  // 1. Prioridad Máxima: Parámetro explícito en la URL del iframe (?lang=en)
   const urlParams = new URLSearchParams(window.location.search);
   let lang = urlParams.get('lang');
   if (lang && validLangs.includes(lang.toLowerCase())) return lang.toLowerCase();
   
-  // 2. Prioridad: Referrer (URL de la página padre que carga el iframe)
+  // 2. Prioridad: Ruta en el Referrer (URL de la web padre)
   const referrer = document.referrer;
   if (referrer) {
+    const lowerReferrer = referrer.toLowerCase();
     for (const l of validLangs) {
-      // Busca patrones como /en/home.html o hostallevante.com/it/
-      if (referrer.toLowerCase().includes(`/${l}/`)) return l;
+      // Busca patrones como hostallevante.com/en/ o /ca/home.html
+      if (lowerReferrer.includes(`/${l}/`)) return l;
     }
   }
   
@@ -29,7 +30,7 @@ const detectLanguage = () => {
   const navLang = navigator.language.split('-')[0];
   if (validLangs.includes(navLang)) return navLang;
   
-  return 'es'; // Por defecto
+  return 'es'; // Idioma base
 };
 
 const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
@@ -132,6 +133,13 @@ const App = () => {
   });
 
   const [lang, setLang] = useState(detectLanguage());
+
+  // Escuchar cambios en la URL (si el padre cambia el idioma dinámicamente)
+  useEffect(() => {
+    const handleUrlChange = () => setLang(detectLanguage());
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('levante_kb', JSON.stringify(knowledge));

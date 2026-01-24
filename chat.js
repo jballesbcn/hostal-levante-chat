@@ -9,11 +9,11 @@ const html = htm.bind(React.createElement);
 const UI_TEXT = {
   es: { book: "Reserva", write: "Escribe tu duda...", greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", error: "Lo siento, mi conexión ha fallado un momento." },
   en: { book: "Book Now", write: "Type your question...", greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", error: "I'm sorry, I lost my connection for a second." },
-  it: { book: "Prenota", write: "Scrivi la tua domanda...", greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicazioni?", error: "Scusa, la mia connessione si è interrotta per un momento." },
+  it: { book: "Prenota", write: "Scrivi la tua domanda...", greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicaciones?", error: "Scusa, la mia connessione si è interrotta per un momento." },
   de: { book: "Buchen", write: "Schreiben Sie Ihre Frage...", greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer oder brauchen Sie Hilfe?", error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen." },
   fr: { book: "Réserver", write: "Écrivez votre question...", greeting: "Bonjour ! Je suis votre Concierge à l'Hostal Levante. Vous cherchez une chambre ou des indications ?", error: "Désolé, j'ai perdu ma conexión pendant un moment." },
   nl: { book: "Boeken", write: "Typ je vraag...", greeting: "Hallo! I ben je conciërge bij Hostal Levante. Zoek je een kamer of heb je hulp nodig?", error: "Sorry, ik ben de verbinding even kwijt." },
-  pt: { book: "Reservar", write: "Digite sua duda...", greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto o precisa de ajuda?", error: "Desculpe, perdi minha conexão por un momento." },
+  pt: { book: "Reservar", write: "Digite sua duda...", greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto o precisa de ajuda?", error: "Desculpe, perdi minha conexión por un momento." },
   ca: { book: "Reserva ara", write: "Escriu el teu dubte...", greeting: "Hola! Soc el teu Concierge a l'Hostal Levante. Busques habitació o necessites saber com arribar-hi?", error: "Ho sento, la meva connexió ha fallat un momento." }
 };
 
@@ -26,9 +26,11 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef(null);
   
+  // Sincronizar el idioma forzado con el estado local
   const lang = forcedLang || 'es';
   const t = UI_TEXT[lang] || UI_TEXT.es;
 
+  // Reiniciar mensajes cuando cambie el idioma
   useEffect(() => {
     setMessages([{ role: 'model', text: t.greeting }]);
   }, [lang]);
@@ -67,17 +69,17 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
             temperature: 0.3, 
             systemInstruction: `You are the polyglot CONCIERGE of Hostal Levante in Barcelona.
             
-            RULES:
-            1. ALWAYS respond in the EXACT SAME language used by the user.
-            2. Be professional, warm, and concise.
+            MANDATORY RULES:
+            1. ALWAYS respond in the SAME language the user is speaking (${lang.toUpperCase()}).
+            2. Be professional, warm, and brief.
             
             FORMATTING RULES:
-            - Use a SINGLE newline (\\n) to separate sentences or points.
+            - Use a SINGLE newline (\\n) between sentences or ideas to maintain list structure.
             - NEVER use double newlines (\\n\\n).
-            - Use "•" for list items. Each item must be on its own line.
-            - NO asterisks (*).
+            - Use "•" for list items. Each bullet point MUST be on a new line.
+            - NO asterisks (*). No bolding with stars.
             
-            KNOWLEDGE:
+            KNOWLEDGE BASE:
             ${kbContent}`
         }
       });
@@ -99,7 +101,7 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
 
   if (!isOpen && isEmbedded) return html`
     <div className="w-full h-full flex items-center justify-center">
-      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all border-4 border-white">
+      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all border-4 border-white shadow-blue-900/30">
         <i className="fas fa-concierge-bell text-2xl"></i>
       </button>
     </div>
@@ -132,7 +134,7 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
           <div key=${i} className=${`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeInUp`}>
             <div 
               style=${{ whiteSpace: 'pre-line' }}
-              className=${`max-w-[88%] p-4 rounded-2xl text-[13px] shadow-sm ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}
+              className=${`max-w-[88%] p-4 rounded-2xl text-[13px] shadow-sm ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}
             >
                ${m.text}
             </div>
@@ -158,7 +160,7 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
             className="flex-1 bg-transparent text-[13px] px-3 py-2.5 outline-none"
             disabled=${isTyping}
           />
-          <button onClick=${() => onSend()} disabled=${isTyping || !input.trim()} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-30 transition-all">
+          <button onClick=${() => onSend()} disabled=${isTyping || !input.trim()} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-30 transition-all shadow-lg shadow-blue-900/10">
             <i className="fas fa-paper-plane text-[10px]"></i>
           </button>
         </div>
