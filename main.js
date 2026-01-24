@@ -31,12 +31,6 @@ const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
 
-  const navigate = (view) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('view', view);
-    window.location.href = url.toString();
-  };
-
   const handleAdd = (e) => {
     e.preventDefault();
     if (!newTitle || !newContent) return;
@@ -46,71 +40,29 @@ const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
   };
 
   return html`
-    <div className="p-8 max-w-5xl mx-auto font-sans bg-[#f1f5f9] min-h-screen">
-      <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-sm mb-8">
-        <div className="flex flex-col md:flex-row justify-between items-start mb-10 gap-6">
-            <div>
-                <h1 className="text-3xl font-black text-slate-800 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[#1e3a8a] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-900/20">
-                    <i className="fas fa-robot text-xl"></i>
-                  </div>
-                  Gestión IA Hostal Levante
-                </h1>
-                <p className="text-slate-400 mt-2 font-medium">Configuración del Concierge Digital</p>
-            </div>
-            <div className="flex gap-3">
-                <button onClick=${() => navigate('contact')} className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                    <i className="fas fa-envelope mr-2"></i> Probar Contacto
-                </button>
-                <button onClick=${() => {
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete('view');
-                    window.location.href = url.toString();
-                }} className="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-black transition-colors">
-                    <i className="fas fa-comment mr-2"></i> Ver Chat
-                </button>
-            </div>
-        </div>
+    <div className="p-8 max-w-4xl mx-auto font-sans bg-slate-50 min-h-screen text-slate-800">
+      <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+        <h1 className="text-2xl font-black mb-2">Panel Admin - Hostal Levante</h1>
+        <p className="text-slate-400 text-sm mb-8">Gestión de conocimientos de la IA</p>
+        
+        <form onSubmit=${handleAdd} className="flex gap-4 mb-10">
+          <input className="border p-3 rounded-xl flex-1 text-sm" placeholder="Título" value=${newTitle} onChange=${e => setNewTitle(e.target.value)} />
+          <input className="border p-3 rounded-xl flex-[2] text-sm" placeholder="Contenido para la IA" value=${newContent} onChange=${e => setNewContent(e.target.value)} />
+          <button className="bg-blue-600 text-white px-6 rounded-xl font-bold">Añadir</button>
+        </form>
 
-        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 mb-8">
-          <h3 className="text-sm font-black text-slate-700 mb-4 uppercase tracking-wider">Añadir nueva instrucción a la IA</h3>
-          <form onSubmit=${handleAdd} className="flex flex-col md:flex-row gap-4">
-            <input 
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1e3a8a]" 
-              placeholder="Título (Ej: Check-out)" 
-              value=${newTitle}
-              onChange=${e => setNewTitle(e.target.value)}
-            />
-            <input 
-              className="flex-[2] px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1e3a8a]" 
-              placeholder="Descripción para la IA..." 
-              value=${newContent}
-              onChange=${e => setNewContent(e.target.value)}
-            />
-            <button type="submit" className="bg-[#1e3a8a] text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors">
-              <i className="fas fa-plus mr-2"></i> Actualizar IA
-            </button>
-          </form>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-xs font-black text-slate-400 mb-4 uppercase tracking-widest">Conocimientos Activos</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${knowledge.map((item, idx) => html`
-              <div key=${idx} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-start group">
-                <div>
-                  <div className="font-bold text-slate-800 text-sm mb-1">${item.title}</div>
-                  <div className="text-slate-500 text-xs leading-relaxed">${item.content}</div>
-                </div>
-                <button 
-                  onClick=${() => onDelete(idx)}
-                  className="text-slate-300 hover:text-red-500 p-2 transition-colors opacity-0 group-hover:opacity-100"
-                >
-                  <i className="fas fa-trash-alt text-xs"></i>
-                </button>
+        <div className="space-y-4">
+          ${knowledge.map((item, idx) => html`
+            <div key=${idx} className="flex justify-between items-center p-4 border rounded-2xl bg-slate-50">
+              <div>
+                <div className="font-bold text-sm">${item.title}</div>
+                <div className="text-xs text-slate-500">${item.content}</div>
               </div>
-            `)}
-          </div>
+              <button onClick=${() => onDelete(idx)} className="text-red-400 hover:text-red-600 p-2">
+                <i className="fas fa-trash"></i>
+              </button>
+            </div>
+          `)}
         </div>
       </div>
     </div>
@@ -130,12 +82,6 @@ const App = () => {
   const [lang, setLang] = useState(detectLanguage());
 
   useEffect(() => {
-    const handleUrlChange = () => setLang(detectLanguage());
-    window.addEventListener('popstate', handleUrlChange);
-    return () => window.removeEventListener('popstate', handleUrlChange);
-  }, []);
-
-  useEffect(() => {
     localStorage.setItem('levante_kb', JSON.stringify(knowledge));
   }, [knowledge]);
 
@@ -145,14 +91,18 @@ const App = () => {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
   
-  // 1. Si es contacto, mostrar formulario
-  if (view === 'contact') return html`<${ContactForm} forcedLang=${lang} />`;
-  
-  // 2. Si es admin, mostrar panel (Acceso solo vía ?view=admin)
+  // Vista de Administración (Solo vía ?view=admin)
   if (view === 'admin') return html`<${AdminPanel} knowledge=${knowledge} onAdd=${addKnowledge} onDelete=${deleteKnowledge} />`;
   
-  // 3. Por DEFECTO siempre el Chat (evita que aparezca la línea de configuración en la web)
-  return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} forcedLang=${lang} />`;
+  // Vista de Contacto
+  if (view === 'contact') return html`<${ContactForm} forcedLang=${lang} />`;
+  
+  // POR DEFECTO: El ChatWidget (con fondo transparente y sin márgenes)
+  return html`
+    <div className="w-full h-full m-0 p-0 bg-transparent overflow-hidden">
+        <${ChatWidget} knowledge=${knowledge} isEmbedded=${true} forcedLang=${lang} />
+    </div>
+  `;
 };
 
 createRoot(document.getElementById('root')).render(html`<${App} />`);
