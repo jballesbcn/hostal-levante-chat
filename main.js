@@ -8,6 +8,32 @@ import { ContactForm } from './contact.js';
 
 const html = htm.bind(React.createElement);
 
+// Función de utilidad global para detectar idioma de forma ultra-robusta
+const detectLanguage = () => {
+  const search = window.location.search;
+  const href = window.location.href;
+  
+  // 1. Intentar por parámetro URL estándar
+  const urlParams = new URLSearchParams(search);
+  let lang = urlParams.get('lang');
+  
+  // 2. Si falla (por culpa de //?), intentar buscar "lang=" manualmente en la URL completa
+  if (!lang && href.includes('lang=')) {
+    const match = href.match(/lang=([a-z]{2})/i);
+    if (match) lang = match[1];
+  }
+  
+  // 3. Soporte para códigos válidos
+  const validLangs = ['es', 'en', 'ca', 'fr', 'it', 'de', 'nl', 'pt'];
+  if (lang && validLangs.includes(lang.toLowerCase())) return lang.toLowerCase();
+  
+  // 4. Fallback al navegador
+  const navLang = navigator.language.split('-')[0];
+  if (validLangs.includes(navLang)) return navLang;
+  
+  return 'es';
+};
+
 const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
@@ -49,7 +75,6 @@ const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
             </div>
         </div>
 
-        <!-- Formulario para añadir conocimiento -->
         <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 mb-8">
           <h3 className="text-sm font-black text-slate-700 mb-4 uppercase tracking-wider">Añadir nueva instrucción a la IA</h3>
           <form onSubmit=${handleAdd} className="flex flex-col md:flex-row gap-4">
@@ -71,7 +96,6 @@ const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
           </form>
         </div>
 
-        <!-- Lista de conocimiento -->
         <div className="space-y-3">
           <h3 className="text-xs font-black text-slate-400 mb-4 uppercase tracking-widest">Base de Conocimientos Actual</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -105,7 +129,7 @@ const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
             </div>
         </div>
         <div className="lg:col-span-8 relative h-[650px] border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-2xl bg-white">
-            <${ChatWidget} knowledge=${knowledge} isEmbedded=${true} />
+            <${ChatWidget} knowledge=${knowledge} isEmbedded=${true} forcedLang=${detectLanguage()} />
         </div>
       </div>
     </div>
@@ -122,6 +146,8 @@ const App = () => {
     ];
   });
 
+  const lang = detectLanguage();
+
   useEffect(() => {
     localStorage.setItem('levante_kb', JSON.stringify(knowledge));
   }, [knowledge]);
@@ -133,9 +159,9 @@ const App = () => {
   const view = params.get('view');
   const isEmbed = params.get('embed') === 'true';
 
-  if (view === 'booking') return html`<${BookingForm} />`;
-  if (view === 'contact') return html`<${ContactForm} />`;
-  if (isEmbed) return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} />`;
+  if (view === 'booking') return html`<${BookingForm} forcedLang=${lang} />`;
+  if (view === 'contact') return html`<${ContactForm} forcedLang=${lang} />`;
+  if (isEmbed) return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} forcedLang=${lang} />`;
   
   return html`<${AdminPanel} knowledge=${knowledge} onAdd=${addKnowledge} onDelete=${deleteKnowledge} />`;
 };

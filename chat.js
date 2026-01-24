@@ -7,53 +7,49 @@ const html = htm.bind(React.createElement);
 
 const UI_TEXT = {
   es: { 
-    book: "Reserva", 
-    contact: "Contacto",
-    write: "Escribe tu duda...", 
+    book: "Reserva", write: "Escribe tu duda...", 
     greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", 
     error: "Lo siento, mi conexión ha fallado un momento.",
     suggestions: ["¿Cómo llegar?", "Check-in 24h?", "¿Tienen Wifi?", "Qué ver cerca", "Reservar"]
   },
   en: { 
-    book: "Book Now", 
-    contact: "Contact",
-    write: "Type your question...", 
+    book: "Book Now", write: "Type your question...", 
     greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", 
     error: "I'm sorry, I lost my connection for a second.",
     suggestions: ["How to get here?", "24h Check-in?", "Free Wifi?", "Local tips", "Book"]
   },
   it: { 
-    book: "Prenota", contact: "Contatti", write: "Scrivi la tua domanda...", 
+    book: "Prenota", write: "Scrivi la tua domanda...", 
     greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicazioni?", 
     error: "Scusa, la mia connessione si è interrotta per un momento.",
     suggestions: ["Come arrivare?", "Check-in 24h?", "C'è il Wifi?", "Prenota"]
   },
   de: { 
-    book: "Buchen", contact: "Kontakt", write: "Schreiben Sie Ihre Frage...", 
+    book: "Buchen", write: "Schreiben Sie Ihre Frage...", 
     greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer oder brauchen Sie Hilfe?", 
     error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen.",
     suggestions: ["Anfahrt?", "24h Check-in?", "Gibt es Wifi?", "Buchen"]
   },
   fr: { 
-    book: "Réserver", contact: "Contact", write: "Écrivez votre question...", 
+    book: "Réserver", write: "Écrivez votre question...", 
     greeting: "Bonjour ! Je suis votre Concierge à l'Hostal Levante. Vous cherchez une chambre ou des indications ?", 
     error: "Désolé, j'ai perdu ma connexion pendant un moment.",
     suggestions: ["Comment venir ?", "Check-in 24h ?", "Y a-t-il du Wifi ?", "Réserver"]
   },
   nl: { 
-    book: "Boeken", contact: "Contact", write: "Typ je vraag...", 
-    greeting: "Hallo! Ik ben je conciërge bij Hostal Levante. Zoek je een kramer of heb je hulp nodig?", 
+    book: "Boeken", write: "Typ je vraag...", 
+    greeting: "Hallo! Ik ben je conciërge bij Hostal Levante. Zoek je een kamer of heb je hulp nodig?", 
     error: "Sorry, ik ben de verbinding even kwijt.",
     suggestions: ["Hoe kom ik er?", "24u Check-in?", "Is er Wifi?", "Boeken"]
   },
   pt: { 
-    book: "Reservar", contact: "Contato", write: "Digite sua duda...", 
+    book: "Reservar", write: "Digite sua dúvida...", 
     greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto ou precisa de ajuda?", 
     error: "Desculpe, perdi minha conexão por um momento.",
     suggestions: ["Como chegar?", "Check-in 24h?", "Tem Wifi?", "Reservar"]
   },
   ca: { 
-    book: "Reserva", contact: "Contacte", write: "Escriu el teu dubte...", 
+    book: "Reserva", write: "Escriu el teu dubte...", 
     greeting: "Hola! Soc el teu Concierge a l'Hostal Levante. Busques habitació o necessites saber com arribar-hi?", 
     error: "Ho sento, la meva connexió ha fallat un moment.",
     suggestions: ["Com arribar-hi?", "Check-in 24h?", "Teniu Wifi?", "Reserva"]
@@ -62,24 +58,17 @@ const UI_TEXT = {
 
 const BOOKING_URL = "https://booking.redforts.com/e4mh/";
 
-export const ChatWidget = ({ knowledge, isEmbedded }) => {
+export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef(null);
   
-  const getLang = () => {
-    const urlLang = new URLSearchParams(window.location.search).get('lang');
-    if (urlLang && UI_TEXT[urlLang]) return urlLang;
-    const navLang = navigator.language.split('-')[0];
-    if (UI_TEXT[navLang]) return navLang;
-    return 'es';
-  };
-
-  const lang = getLang();
+  const lang = forcedLang || 'es';
   const t = UI_TEXT[lang];
 
+  // Reiniciar mensajes si cambia el idioma para que el saludo sea correcto
   useEffect(() => {
     setMessages([{ role: 'model', text: t.greeting }]);
   }, [lang]);
@@ -92,18 +81,13 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
 
   const goToBooking = () => window.open(BOOKING_URL, '_blank');
   
-  const goToContact = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('view', 'contact');
-    window.location.href = url.toString();
-  };
-
   const onSend = async (textOverride) => {
     const textToSend = textOverride || input;
     if (!textToSend.trim() || isTyping) return;
     
     const lowerText = textToSend.toLowerCase();
-    if (lowerText.includes('reservar') || lowerText.includes('book') || lowerText.includes('reserva')) {
+    const bookKeywords = ['reservar', 'book', 'reserva', 'prenota', 'buchen', 'réserver', 'boeken'];
+    if (bookKeywords.some(k => lowerText.includes(k))) {
         goToBooking();
         return;
     }
@@ -124,12 +108,12 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
             systemInstruction: `You are the CONCIERGE of Hostal Levante in Barcelona.
             
             STRICT LANGUAGE RULE:
-            - You are on the ${lang.toUpperCase()} version of the website.
             - You MUST ALWAYS respond in ${lang.toUpperCase()}. No exceptions.
+            - The current user language is set to ${lang.toUpperCase()}.
             
             FORMATTING:
             - NO asterisks (*). Use "•" for bullets.
-            - Short paragraphs. Friendly and helpful.
+            - Short paragraphs. Friendly and travel-oriented.
             
             KNOWLEDGE BASE:
             ${kbContent}`
@@ -153,7 +137,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
 
   if (!isOpen && isEmbedded) return html`
     <div className="w-full h-full flex items-center justify-center">
-      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all border-4 border-white">
+      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all border-4 border-white shadow-blue-900/30">
         <i className="fas fa-concierge-bell text-2xl"></i>
       </button>
     </div>
@@ -168,7 +152,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
           </div>
           <div>
             <div className="font-black text-[13px]">Hostal Levante</div>
-            <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Concierge AI</div>
+            <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Concierge AI (${lang})</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -184,16 +168,16 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f8fafc] hide-scroll">
         ${messages.map((m, i) => html`
           <div key=${i} className=${`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeInUp`}>
-            <div className=${`max-w-[88%] p-4 rounded-2xl text-[13px] shadow-sm ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}>
+            <div className=${`max-w-[88%] p-4 rounded-2xl text-[13px] shadow-sm ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}>
                ${m.text}
             </div>
           </div>
         `)}
         
         ${messages.length === 1 && !isTyping && html`
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex flex-wrap gap-2 mt-4 animate-fadeInUp">
             ${t.suggestions.map(s => html`
-              <button key=${s} onClick=${() => onSend(s)} className="bg-white border border-slate-200 text-slate-600 text-[11px] font-bold px-3 py-2 rounded-full hover:border-[#1e3a8a] transition-all">
+              <button key=${s} onClick=${() => onSend(s)} className="bg-white border border-slate-200 text-slate-600 text-[11px] font-bold px-3 py-2 rounded-full hover:border-[#1e3a8a] hover:text-[#1e3a8a] transition-all shadow-sm">
                 ${s}
               </button>
             `)}
@@ -219,7 +203,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
             className="flex-1 bg-transparent text-[13px] px-3 py-2.5 outline-none"
             disabled=${isTyping}
           />
-          <button onClick=${() => onSend()} disabled=${isTyping || !input.trim()} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-30">
+          <button onClick=${() => onSend()} disabled=${isTyping || !input.trim()} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-30 transition-all shadow-lg shadow-blue-900/10">
             <i className="fas fa-paper-plane text-[10px]"></i>
           </button>
         </div>
