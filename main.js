@@ -8,26 +8,38 @@ import { ContactForm } from './contact.js';
 
 const html = htm.bind(React.createElement);
 
-// Función de utilidad global para detectar idioma de forma ultra-robusta
+// Función de utilidad global para detectar idioma de forma inteligente
 const detectLanguage = () => {
   const search = window.location.search;
   const href = window.location.href;
+  const referrer = document.referrer; // URL de la web principal (HostalLevante.com)
+  const validLangs = ['es', 'en', 'ca', 'fr', 'it', 'de', 'nl', 'pt'];
   
-  // 1. Intentar por parámetro URL estándar
+  // 1. Intentar por parámetro URL del iframe (el que pasa tu script)
   const urlParams = new URLSearchParams(search);
   let lang = urlParams.get('lang');
   
-  // 2. Si falla (por culpa de //?), intentar buscar "lang=" manualmente en la URL completa
-  if (!lang && href.includes('lang=')) {
-    const match = href.match(/lang=([a-z]{2})/i);
+  // 2. Fallback manual si la URL está mal formada (ej: //?lang=en)
+  if (!lang) {
+    const match = href.match(/[?&]lang=([a-z]{2})/i);
     if (match) lang = match[1];
   }
   
-  // 3. Soporte para códigos válidos
-  const validLangs = ['es', 'en', 'ca', 'fr', 'it', 'de', 'nl', 'pt'];
+  // 3. ¡NUEVO! Detectar idioma desde la web principal (Referrer)
+  // Si la web principal es .../en/index.html, detectamos 'en'
+  if (!lang && referrer) {
+    for (const l of validLangs) {
+      if (referrer.includes(`/${l}/`)) {
+        lang = l;
+        break;
+      }
+    }
+  }
+  
+  // 4. Validar y retornar
   if (lang && validLangs.includes(lang.toLowerCase())) return lang.toLowerCase();
   
-  // 4. Fallback al navegador
+  // 5. Fallback al navegador del usuario
   const navLang = navigator.language.split('-')[0];
   if (validLangs.includes(navLang)) return navLang;
   
@@ -146,7 +158,14 @@ const App = () => {
     ];
   });
 
-  const lang = detectLanguage();
+  const [lang, setLang] = useState(detectLanguage());
+
+  // Actualizar idioma si la URL cambia (útil para pruebas)
+  useEffect(() => {
+    const handleLocationChange = () => setLang(detectLanguage());
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('levante_kb', JSON.stringify(knowledge));

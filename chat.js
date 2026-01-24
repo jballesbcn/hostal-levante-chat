@@ -6,54 +6,14 @@ import { GoogleGenAI } from "@google/genai";
 const html = htm.bind(React.createElement);
 
 const UI_TEXT = {
-  es: { 
-    book: "Reserva", write: "Escribe tu duda...", 
-    greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", 
-    error: "Lo siento, mi conexión ha fallado un momento.",
-    suggestions: ["¿Cómo llegar?", "Check-in 24h?", "¿Tienen Wifi?", "Qué ver cerca", "Reservar"]
-  },
-  en: { 
-    book: "Book Now", write: "Type your question...", 
-    greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", 
-    error: "I'm sorry, I lost my connection for a second.",
-    suggestions: ["How to get here?", "24h Check-in?", "Free Wifi?", "Local tips", "Book"]
-  },
-  it: { 
-    book: "Prenota", write: "Scrivi la tua domanda...", 
-    greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicazioni?", 
-    error: "Scusa, la mia connessione si è interrotta per un momento.",
-    suggestions: ["Come arrivare?", "Check-in 24h?", "C'è il Wifi?", "Prenota"]
-  },
-  de: { 
-    book: "Buchen", write: "Schreiben Sie Ihre Frage...", 
-    greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer oder brauchen Sie Hilfe?", 
-    error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen.",
-    suggestions: ["Anfahrt?", "24h Check-in?", "Gibt es Wifi?", "Buchen"]
-  },
-  fr: { 
-    book: "Réserver", write: "Écrivez votre question...", 
-    greeting: "Bonjour ! Je suis votre Concierge à l'Hostal Levante. Vous cherchez une chambre ou des indications ?", 
-    error: "Désolé, j'ai perdu ma connexion pendant un moment.",
-    suggestions: ["Comment venir ?", "Check-in 24h ?", "Y a-t-il du Wifi ?", "Réserver"]
-  },
-  nl: { 
-    book: "Boeken", write: "Typ je vraag...", 
-    greeting: "Hallo! Ik ben je conciërge bij Hostal Levante. Zoek je een kamer of heb je hulp nodig?", 
-    error: "Sorry, ik ben de verbinding even kwijt.",
-    suggestions: ["Hoe kom ik er?", "24u Check-in?", "Is er Wifi?", "Boeken"]
-  },
-  pt: { 
-    book: "Reservar", write: "Digite sua dúvida...", 
-    greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto ou precisa de ajuda?", 
-    error: "Desculpe, perdi minha conexão por um momento.",
-    suggestions: ["Como chegar?", "Check-in 24h?", "Tem Wifi?", "Reservar"]
-  },
-  ca: { 
-    book: "Reserva", write: "Escriu el teu dubte...", 
-    greeting: "Hola! Soc el teu Concierge a l'Hostal Levante. Busques habitació o necessites saber com arribar-hi?", 
-    error: "Ho sento, la meva connexió ha fallat un moment.",
-    suggestions: ["Com arribar-hi?", "Check-in 24h?", "Teniu Wifi?", "Reserva"]
-  }
+  es: { book: "Reserva", write: "Escribe tu duda...", greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", error: "Lo siento, mi conexión ha fallado un momento.", suggestions: ["¿Cómo llegar?", "Check-in 24h?", "¿Tienen Wifi?", "Qué ver cerca", "Reservar"] },
+  en: { book: "Book Now", write: "Type your question...", greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", error: "I'm sorry, I lost my connection for a second.", suggestions: ["How to get here?", "24h Check-in?", "Free Wifi?", "Local tips", "Book"] },
+  it: { book: "Prenota", write: "Scrivi la tua domanda...", greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicazioni?", error: "Scusa, la mia connessione si è interrotta per un momento.", suggestions: ["Come arrivare?", "Check-in 24h?", "C'è il Wifi?", "Prenota"] },
+  de: { book: "Buchen", write: "Schreiben Sie Ihre Frage...", greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer oder brauchen Sie Hilfe?", error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen.", suggestions: ["Anfahrt?", "24h Check-in?", "Gibt es Wifi?", "Buchen"] },
+  fr: { book: "Réserver", write: "Écrivez votre question...", greeting: "Bonjour ! Je suis votre Concierge à l'Hostal Levante. Vous cherchez une chambre ou des indications ?", error: "Désolé, j'ai perdu ma connexion pendant un moment.", suggestions: ["Comment venir ?", "Check-in 24h ?", "Y a-t-il du Wifi ?", "Réserver"] },
+  nl: { book: "Boeken", write: "Typ je vraag...", greeting: "Hallo! Ik ben je conciërge bij Hostal Levante. Zoek je een kamer of heb je hulp nodig?", error: "Sorry, ik ben de verbinding even kwijt.", suggestions: ["Hoe kom ik er?", "24u Check-in?", "Is er Wifi?", "Boeken"] },
+  pt: { book: "Reservar", write: "Digite sua duda...", greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto ou precisa de ajuda?", error: "Desculpe, perdi minha conexão por un momento.", suggestions: ["Como chegar?", "Check-in 24h?", "Tem Wifi?", "Reservar"] },
+  ca: { book: "Reserva", write: "Escriu el teu dubte...", greeting: "Hola! Soc el teu Concierge a l'Hostal Levante. Busques habitació o necessites saber com arribar-hi?", error: "Ho sento, la meva connexió ha fallat un moment.", suggestions: ["Com arribar-hi?", "Check-in 24h?", "Teniu Wifi?", "Reserva"] }
 };
 
 const BOOKING_URL = "https://booking.redforts.com/e4mh/";
@@ -68,7 +28,6 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
   const lang = forcedLang || 'es';
   const t = UI_TEXT[lang];
 
-  // Reiniciar mensajes si cambia el idioma para que el saludo sea correcto
   useEffect(() => {
     setMessages([{ role: 'model', text: t.greeting }]);
   }, [lang]);
@@ -86,7 +45,7 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
     if (!textToSend.trim() || isTyping) return;
     
     const lowerText = textToSend.toLowerCase();
-    const bookKeywords = ['reservar', 'book', 'reserva', 'prenota', 'buchen', 'réserver', 'boeken'];
+    const bookKeywords = ['reservar', 'book', 'reserva', 'prenota', 'buchen', 'réserver', 'boeken', 'reserveren'];
     if (bookKeywords.some(k => lowerText.includes(k))) {
         goToBooking();
         return;
@@ -104,18 +63,21 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
         model: 'gemini-3-flash-preview',
         contents: textToSend,
         config: { 
-            temperature: 0.5,
-            systemInstruction: `You are the CONCIERGE of Hostal Levante in Barcelona.
+            temperature: 0.7, // Subimos un poco la temperatura para que sea más natural
+            systemInstruction: `You are the friendly and professional CONCIERGE of Hostal Levante in Barcelona.
             
-            STRICT LANGUAGE RULE:
-            - You MUST ALWAYS respond in ${lang.toUpperCase()}. No exceptions.
-            - The current user language is set to ${lang.toUpperCase()}.
+            LANGUAGE GUIDELINES:
+            1. The user is currently browsing the ${lang.toUpperCase()} version of the website.
+            2. ALWAYS start and prefer responding in ${lang.toUpperCase()} to maintain consistency with the UI.
+            3. HOWEVER, you are a polyglot concierge. If the user speaks to you in a different language, or explicitly asks to speak another language, YOU MUST ADAPT IMMEDIATELY and assist them in their preferred language.
+            4. NEVER say "I am only configured to speak [Language]". That is false and unhelpful. You can speak any language.
             
             FORMATTING:
-            - NO asterisks (*). Use "•" for bullets.
-            - Short paragraphs. Friendly and travel-oriented.
+            - NO asterisks (*). Use "•" for bullet points.
+            - Use short, clear paragraphs. 
+            - Use friendly travel-related emojis occasionally 🏨.
             
-            KNOWLEDGE BASE:
+            KNOWLEDGE BASE FOR HOSTAL LEVANTE:
             ${kbContent}`
         }
       });
@@ -152,7 +114,7 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
           </div>
           <div>
             <div className="font-black text-[13px]">Hostal Levante</div>
-            <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Concierge AI (${lang})</div>
+            <div className="text-[10px] font-medium opacity-80 uppercase tracking-widest">Concierge AI</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
