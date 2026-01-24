@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import htm from 'htm';
 import { ChatWidget } from './chat.js';
@@ -8,17 +8,28 @@ import { ContactForm } from './contact.js';
 
 const html = htm.bind(React.createElement);
 
-const AdminPanel = ({ knowledge }) => {
+const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
+
   const navigate = (view) => {
     const url = new URL(window.location.href);
     url.searchParams.set('view', view);
     window.location.href = url.toString();
   };
 
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if (!newTitle || !newContent) return;
+    onAdd({ title: newTitle, content: newContent });
+    setNewTitle('');
+    setNewContent('');
+  };
+
   return html`
     <div className="p-8 max-w-5xl mx-auto font-sans bg-[#f1f5f9] min-h-screen">
       <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-sm mb-8">
-        <div className="flex justify-between items-start mb-10">
+        <div className="flex flex-col md:flex-row justify-between items-start mb-10 gap-6">
             <div>
                 <h1 className="text-3xl font-black text-slate-800 flex items-center gap-4">
                   <div className="w-12 h-12 bg-[#1e3a8a] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-900/20">
@@ -38,30 +49,47 @@ const AdminPanel = ({ knowledge }) => {
             </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-2 text-sm">
-           <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border border-blue-100 group hover:shadow-md transition-all">
-             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 mb-4 shadow-sm">
-                <i className="fas fa-robot text-lg"></i>
-             </div>
-             <div className="font-black text-slate-800 text-lg mb-1">Concierge AI</div>
-             <div className="text-blue-600/70 text-[10px] uppercase tracking-widest font-black">Estado: Proactivo</div>
-           </div>
-           
-           <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm opacity-60 grayscale">
-             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mb-4">
-                <i className="fas fa-chart-pie text-lg"></i>
-             </div>
-             <div className="font-black text-slate-800 text-lg mb-1">Estadísticas</div>
-             <div className="text-slate-400 text-[10px] uppercase tracking-widest font-black">Mantenimiento</div>
-           </div>
+        <!-- Formulario para añadir conocimiento -->
+        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 mb-8">
+          <h3 className="text-sm font-black text-slate-700 mb-4 uppercase tracking-wider">Añadir nueva instrucción a la IA</h3>
+          <form onSubmit=${handleAdd} className="flex flex-col md:flex-row gap-4">
+            <input 
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1e3a8a]" 
+              placeholder="Título (Ej: Mascotas)" 
+              value=${newTitle}
+              onChange=${e => setNewTitle(e.target.value)}
+            />
+            <input 
+              className="flex-[2] px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#1e3a8a]" 
+              placeholder="Descripción para la IA..." 
+              value=${newContent}
+              onChange=${e => setNewContent(e.target.value)}
+            />
+            <button type="submit" className="bg-[#1e3a8a] text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors">
+              <i className="fas fa-plus mr-2"></i> Añadir
+            </button>
+          </form>
+        </div>
 
-           <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm opacity-60 grayscale">
-             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mb-4">
-                <i className="fas fa-database text-lg"></i>
-             </div>
-             <div className="font-black text-slate-800 text-lg mb-1">Documentación</div>
-             <div className="text-slate-400 text-[10px] uppercase tracking-widest font-black">Próximamente</div>
-           </div>
+        <!-- Lista de conocimiento -->
+        <div className="space-y-3">
+          <h3 className="text-xs font-black text-slate-400 mb-4 uppercase tracking-widest">Base de Conocimientos Actual</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${knowledge.map((item, idx) => html`
+              <div key=${idx} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-start group">
+                <div>
+                  <div className="font-bold text-slate-800 text-sm mb-1">${item.title}</div>
+                  <div className="text-slate-500 text-xs leading-relaxed">${item.content}</div>
+                </div>
+                <button 
+                  onClick=${() => onDelete(idx)}
+                  className="text-slate-300 hover:text-red-500 p-2 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <i className="fas fa-trash-alt text-xs"></i>
+                </button>
+              </div>
+            `)}
+          </div>
         </div>
       </div>
       
@@ -69,12 +97,10 @@ const AdminPanel = ({ knowledge }) => {
         <div className="lg:col-span-4 space-y-4">
             <div className="bg-[#1e3a8a] text-white p-8 rounded-[2rem] shadow-xl">
                 <h3 className="font-black text-xl mb-4 leading-tight">Vista del Cliente</h3>
-                <p className="text-blue-100 text-sm mb-6 leading-relaxed">Interactúa con el asistente tal y como lo verán tus huéspedes en la web oficial.</p>
-                <div className="flex flex-col gap-2">
-                    <div className="p-3 bg-white/10 rounded-xl text-[10px] flex items-center gap-2">
-                        <i className="fas fa-info-circle opacity-50"></i>
-                        <span>Modo Concierge Activado</span>
-                    </div>
+                <p className="text-blue-100 text-sm mb-6 leading-relaxed">Prueba aquí cómo responde el asistente con los nuevos datos añadidos.</p>
+                <div className="p-3 bg-white/10 rounded-xl text-[10px] flex items-center gap-2">
+                    <i className="fas fa-info-circle opacity-50"></i>
+                    <span>Modo Concierge Activado</span>
                 </div>
             </div>
         </div>
@@ -87,16 +113,21 @@ const AdminPanel = ({ knowledge }) => {
 };
 
 const App = () => {
-  const [knowledge] = useState([
-    { title: 'Check-in', content: 'Desde las 15:00h (3:00 PM). Recepción abierta 24h. Si llegas antes puedes dejar equipaje en consigna.' },
-    { title: 'Check-out', content: 'Límite a las 11:00h AM. Se puede dejar equipaje en consigna después. No hay late check-out.' },
-    { title: 'Pagos y Tarifas', content: 'No Reembolsable: se cobra al reservar. Solo Acomodación: depósito de una noche 3 días antes, el resto al llegar (tarjeta o efectivo). Tasa turística se paga al llegar.' },
-    { title: 'Cómo llegar', content: 'Desde Aeropuerto: Aerobús a Plaza Catalunya, luego Metro L3 a Liceu. Desde Sants: Metro L3 (línea verde) a Liceu. También Taxi/Uber disponible.' },
-    { title: 'Accesibilidad', content: 'No adaptado para necesidades especiales. Acceso por escaleras, ascensor pequeño (no cabe silla de ruedas sin plegar).' },
-    { title: 'Servicios Habitación', content: 'Sin televisión. Incluye ropa de cama y toallas. Wifi gratis. Aire acondicionado y calefacción.' },
-    { title: 'Otros Servicios', content: 'Pequeña nevera en recepción para medicinas. No hay cocina ni microondas. No hay desayuno ni comidas.' },
-    { title: 'Ubicación y Entorno', content: 'En el centro gótico, Baixada de Sant Miquel 2. Cerca de Las Ramblas, Liceu y la Catedral.' }
-  ]);
+  const [knowledge, setKnowledge] = useState(() => {
+    const saved = localStorage.getItem('levante_kb');
+    return saved ? JSON.parse(saved) : [
+      { title: 'Check-in', content: 'Desde las 15:00h. Recepción 24h. Consigna gratuita.' },
+      { title: 'Check-out', content: 'Límite a las 11:00h AM. Consigna disponible después.' },
+      { title: 'Ubicación', content: 'Baixada de Sant Miquel 2, en el corazón del Gótico.' }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('levante_kb', JSON.stringify(knowledge));
+  }, [knowledge]);
+
+  const addKnowledge = (item) => setKnowledge([...knowledge, item]);
+  const deleteKnowledge = (index) => setKnowledge(knowledge.filter((_, i) => i !== index));
   
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
@@ -106,7 +137,7 @@ const App = () => {
   if (view === 'contact') return html`<${ContactForm} />`;
   if (isEmbed) return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} />`;
   
-  return html`<${AdminPanel} knowledge=${knowledge} />`;
+  return html`<${AdminPanel} knowledge=${knowledge} onAdd=${addKnowledge} onDelete=${deleteKnowledge} />`;
 };
 
 createRoot(document.getElementById('root')).render(html`<${App} />`);

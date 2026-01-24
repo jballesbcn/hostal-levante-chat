@@ -132,16 +132,23 @@ export const ContactForm = () => {
   const [isHuman, setIsHuman] = useState(false);
   const [status, setStatus] = useState('idle');
   const [countdown, setCountdown] = useState(null);
-  const lang = new URLSearchParams(window.location.search).get('lang') || 'es';
-  const t = TEXTS[lang] || TEXTS.es;
 
-  // Lógica de cuenta atrás y redirección
+  const getLang = () => {
+    const urlLang = new URLSearchParams(window.location.search).get('lang');
+    if (urlLang && TEXTS[urlLang]) return urlLang;
+    const navLang = navigator.language.split('-')[0];
+    if (TEXTS[navLang]) return navLang;
+    return 'es';
+  };
+
+  const lang = getLang();
+  const t = TEXTS[lang];
+
   useEffect(() => {
     let timer;
     if (countdown !== null && countdown > 0) {
       timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
     } else if (countdown === 0) {
-      // Redirección forzada a la URL absoluta del Hostal
       window.top.location.href = 'https://www.hostallevante.com/index.html';
     }
     return () => clearTimeout(timer);
@@ -162,14 +169,13 @@ export const ContactForm = () => {
       const result = await response.json();
       if (result.status === 'success') {
         setStatus('success');
-        setCountdown(5); // Inicia la cuenta atrás de 5 segundos
+        setCountdown(5);
       } else {
         throw new Error(result.message || 'Error desconocido');
       }
     } catch (err) {
       console.error("Error envío:", err);
       setStatus('error');
-      // Reset automático del estado de error tras 3 segundos para dejar reintentar
       setTimeout(() => setStatus('idle'), 3000);
     }
   };
@@ -230,7 +236,6 @@ export const ContactForm = () => {
               ></textarea>
             </div>
 
-            <!-- reCAPTCHA Mock -->
             <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl max-w-sm">
                 <div className="flex items-center gap-3">
                     <input 
@@ -258,7 +263,6 @@ export const ContactForm = () => {
                 ${status === 'loading' ? t.sending : t.send}
             </button>
 
-            <!-- Pantalla de Éxito y Cuenta Atrás -->
             ${status === 'success' && html`
               <div className="fixed inset-0 bg-white z-[999] flex items-center justify-center p-8 animate-fadeIn">
                 <div className="text-center space-y-6 max-w-sm">
