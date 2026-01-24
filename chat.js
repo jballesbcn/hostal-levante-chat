@@ -6,14 +6,22 @@ import { GoogleGenAI } from "@google/genai";
 const html = htm.bind(React.createElement);
 
 const UI_TEXT = {
-  es: { book: "Reserva", write: "Escribe tu duda...", greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", error: "Lo siento, mi conexión ha fallado un momento." },
-  en: { book: "Book Now", write: "Type your question...", greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", error: "I'm sorry, I lost my connection for a second." },
-  it: { book: "Prenota", write: "Scrivi la tua domanda...", greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicaciones?", error: "Scusa, la mia connessione si è interrotta per un momento." },
-  de: { book: "Buchen", write: "Schreiben Sie Ihre Frage...", greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer o brauchen Sie Hilfe?", error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen." },
-  fr: { book: "Réserver", write: "Écrivez votre question...", greeting: "Bonjour ! Je suis votre Concierge à l'Hostal Levante. Vous cherchez une chambre ou des indications ?", error: "Désolé, j'ai perdu ma conexión pendant un moment." },
-  nl: { book: "Boeken", write: "Typ je vraag...", greeting: "Hallo! I ben je conciërge bij Hostal Levante. Zoek je een kamer of heb je hulp nodig?", error: "Sorry, ik ben de verbinding even kwijt." },
-  pt: { book: "Reservar", write: "Digite sua duda...", greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto o precisa de ayuda?", error: "Desculpe, perdi minha conexión por un momento." },
-  ca: { book: "Reserva ara", write: "Escriu el teu dubte...", greeting: "Hola! Soc el teu Concierge a l'Hostal Levante. Busques habitació o necessites saber com arribar-hi?", error: "Ho sento, la meva connexió ha fallat un momento." }
+  es: { 
+    book: "Reserva", 
+    contact: "Contacto",
+    write: "Escribe tu duda...", 
+    greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", 
+    error: "Lo siento, mi conexión ha fallado un momento.",
+    suggestions: ["¿Cómo llegar?", "Check-in 24h?", "¿Tienen Wifi?", "Qué ver cerca", "Reservar"]
+  },
+  en: { 
+    book: "Book Now", 
+    contact: "Contact",
+    write: "Type your question...", 
+    greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", 
+    error: "I'm sorry, I lost my connection for a second.",
+    suggestions: ["How to get here?", "24h Check-in?", "Free Wifi?", "Local tips", "Book"]
+  }
 };
 
 const BOOKING_URL = "https://booking.redforts.com/e4mh/";
@@ -56,7 +64,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
     
     const lowerText = textToSend.toLowerCase();
 
-    if (lowerText.includes('reservar') || lowerText.includes('book') || lowerText.includes('reserva') || lowerText.includes('prenota') || lowerText.includes('buche')) {
+    if (lowerText.includes('reservar') || (lowerText.includes('book') && !lowerText.includes('ing'))) {
         goToBooking();
         return;
     }
@@ -80,11 +88,11 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
             temperature: 0.7,
             systemInstruction: `Eres el CONCIERGE experto del Hostal Levante en Barcelona. 
             
-            REGLAS CRÍTICAS:
-            1. Responde SIEMPRE en el idioma en que te hable el usuario (ES, EN, DE, FR, IT, NL, PT o CA).
-            2. PROHIBIDO usar asteriscos (*). No los uses para negrita ni para listas.
-            3. Usa viñetas claras con el símbolo "•" para enumerar opciones o servicios.
-            4. Estructura la respuesta en párrafos cortos y usa saltos de línea (ENTER).
+            REGLAS CRÍTICAS DE FORMATO:
+            1. PROHIBIDO usar asteriscos (*). No los uses para negrita ni para listas.
+            2. Usa viñetas claras con el símbolo "•" para enumerar opciones o servicios.
+            3. Estructura la respuesta en párrafos cortos. 
+            4. Usa saltos de línea (ENTER) para separar ideas. No amontones el texto.
             5. Sé amable, proactivo y usa emojis de viaje 🏨.
             
             CONTENIDO:
@@ -99,7 +107,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       });
 
       if (!response.text) throw new Error("Sin respuesta");
-      setMessages(prev => [...prev, { role: 'model', text: response.text.replace(/\*/g, '') }]);
+      setMessages(prev => [...prev, { role: 'model', text: response.text }]);
     } catch (err) {
       console.error("Gemini Error:", err);
       setMessages(prev => [...prev, { role: 'model', text: t.error }]);
@@ -153,7 +161,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
       <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f8fafc] hide-scroll">
         ${messages.map((m, i) => html`
           <div key=${i} className=${`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeInUp`}>
-            <div className=${`max-w-[88%] p-4 rounded-2xl text-[13px] shadow-sm whitespace-pre-wrap ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}>
+            <div className=${`max-w-[88%] p-4 rounded-2xl text-[13px] leading-[1.6] shadow-sm whitespace-pre-wrap ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}>
                ${m.text}
             </div>
           </div>
