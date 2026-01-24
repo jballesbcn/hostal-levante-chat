@@ -7,30 +7,29 @@ import { ContactForm } from './contact.js';
 
 const html = htm.bind(React.createElement);
 
-// Detección de idioma robusta
+// Detección de idioma ultra-precisa para Hostal Levante
 const detectLanguage = () => {
-  const search = window.location.search;
-  const referrer = document.referrer;
   const validLangs = ['es', 'en', 'ca', 'fr', 'it', 'de', 'nl', 'pt'];
   
-  const urlParams = new URLSearchParams(search);
+  // 1. Prioridad: Parámetro URL explícito (?lang=en)
+  const urlParams = new URLSearchParams(window.location.search);
   let lang = urlParams.get('lang');
+  if (lang && validLangs.includes(lang.toLowerCase())) return lang.toLowerCase();
   
-  if (!lang && referrer) {
+  // 2. Prioridad: Referrer (URL de la página padre que carga el iframe)
+  const referrer = document.referrer;
+  if (referrer) {
     for (const l of validLangs) {
-      if (referrer.includes(`/${l}/`)) {
-        lang = l;
-        break;
-      }
+      // Busca patrones como /en/home.html o hostallevante.com/it/
+      if (referrer.toLowerCase().includes(`/${l}/`)) return l;
     }
   }
   
-  if (lang && validLangs.includes(lang.toLowerCase())) return lang.toLowerCase();
-  
+  // 3. Prioridad: Idioma del navegador
   const navLang = navigator.language.split('-')[0];
   if (validLangs.includes(navLang)) return navLang;
   
-  return 'es';
+  return 'es'; // Por defecto
 };
 
 const AdminPanel = ({ knowledge, onAdd, onDelete }) => {

@@ -7,14 +7,14 @@ const html = htm.bind(React.createElement);
 
 // Traducciones para la interfaz (Botones y etiquetas)
 const UI_TEXT = {
-  es: { book: "Reserva", write: "Escribe tu duda...", greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", error: "Lo siento, mi conexión ha fallado un momento.", suggestions: ["¿Cómo llegar?", "Check-in 24h?", "¿Tienen Wifi?", "Reservar"] },
-  en: { book: "Book Now", write: "Type your question...", greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", error: "I'm sorry, I lost my connection for a second.", suggestions: ["How to get here?", "24h Check-in?", "Free Wifi?", "Book"] },
-  it: { book: "Prenota", write: "Scrivi la tua domanda...", greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicazioni?", error: "Scusa, la mia connessione si è interrotta per un momento.", suggestions: ["Come arrivare?", "Check-in 24h?", "Prenota"] },
-  de: { book: "Buchen", write: "Schreiben Sie Ihre Frage...", greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer oer brauchen Sie Hilfe?", error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen.", suggestions: ["Anfahrt?", "24h Check-in?", "Buchen"] },
-  fr: { book: "Réserver", write: "Écrivez votre question...", greeting: "Bonjour ! Je suis votre Concierge à l'Hostal Levante. Vous cherchez une chambre ou des indications ?", error: "Désolé, j'ai perdu ma connexion pendant un moment.", suggestions: ["Comment venir ?", "Check-in 24h ?", "Réserver"] },
-  nl: { book: "Boeken", write: "Typ je vraag...", greeting: "Hallo! I ben je conciërge bij Hostal Levante. Zoek je een kamer of heb je hulp nodig?", error: "Sorry, ik ben de verbinding even kwijt.", suggestions: ["Hoe kom ik er?", "24u Check-in?", "Boeken"] },
-  pt: { book: "Reservar", write: "Digite sua duda...", greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto o precisa de ajuda?", error: "Desculpe, perdi minha conexão por un momento.", suggestions: ["Como chegar?", "Check-in 24h?", "Reservar"] },
-  ca: { book: "Reserva", write: "Escriu el teu dubte...", greeting: "Hola! Soc el teu Concierge a l'Hostal Levante. Busques habitació o necessites saber com arribar-hi?", error: "Ho sento, la meva connexió ha fallat un momento.", suggestions: ["Com arribar-hi?", "Check-in 24h?", "Reserva"] }
+  es: { book: "Reserva", write: "Escribe tu duda...", greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", error: "Lo siento, mi conexión ha fallado un momento." },
+  en: { book: "Book Now", write: "Type your question...", greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", error: "I'm sorry, I lost my connection for a second." },
+  it: { book: "Prenota", write: "Scrivi la tua domanda...", greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicazioni?", error: "Scusa, la mia connessione si è interrotta per un momento." },
+  de: { book: "Buchen", write: "Schreiben Sie Ihre Frage...", greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer oder brauchen Sie Hilfe?", error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen." },
+  fr: { book: "Réserver", write: "Écrivez votre question...", greeting: "Bonjour ! Je suis votre Concierge à l'Hostal Levante. Vous cherchez une chambre ou des indications ?", error: "Désolé, j'ai perdu ma conexión pendant un moment." },
+  nl: { book: "Boeken", write: "Typ je vraag...", greeting: "Hallo! I ben je conciërge bij Hostal Levante. Zoek je een kamer of heb je hulp nodig?", error: "Sorry, ik ben de verbinding even kwijt." },
+  pt: { book: "Reservar", write: "Digite sua duda...", greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto o precisa de ajuda?", error: "Desculpe, perdi minha conexão por un momento." },
+  ca: { book: "Reserva ara", write: "Escriu el teu dubte...", greeting: "Hola! Soc el teu Concierge a l'Hostal Levante. Busques habitació o necessites saber com arribar-hi?", error: "Ho sento, la meva connexió ha fallat un momento." }
 };
 
 const EXTERNAL_BOOKING_URL = "https://booking.redforts.com/e4mh/";
@@ -68,16 +68,14 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
             systemInstruction: `You are the polyglot CONCIERGE of Hostal Levante in Barcelona.
             
             RULES:
-            1. You speak ALL languages. 
-            2. ALWAYS respond in the SAME language the user uses.
-            3. NEVER apologize for your language settings or claim you only speak one language.
-            4. Keep responses professional, warm, and concise.
+            1. ALWAYS respond in the EXACT SAME language used by the user.
+            2. Be professional, warm, and concise.
             
-            FORMATTING (STRICT):
-            - Use a SINGLE line break (\n) between paragraphs or sentences to maintain vertical structure.
-            - DO NOT use double line breaks (\n\n).
-            - NO asterisks (*). Use "•" for bullets.
-            - Each bullet point must start on a NEW line.
+            FORMATTING RULES:
+            - Use a SINGLE newline (\\n) to separate sentences or points.
+            - NEVER use double newlines (\\n\\n).
+            - Use "•" for list items. Each item must be on its own line.
+            - NO asterisks (*).
             
             KNOWLEDGE:
             ${kbContent}`
@@ -101,7 +99,7 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
 
   if (!isOpen && isEmbedded) return html`
     <div className="w-full h-full flex items-center justify-center">
-      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all border-4 border-white shadow-blue-900/30">
+      <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all border-4 border-white">
         <i className="fas fa-concierge-bell text-2xl"></i>
       </button>
     </div>
@@ -132,7 +130,10 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
       <div ref=${scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f8fafc] hide-scroll">
         ${messages.map((m, i) => html`
           <div key=${i} className=${`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeInUp`}>
-            <div className=${`max-w-[88%] p-4 rounded-2xl text-[13px] shadow-sm whitespace-pre-wrap ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}>
+            <div 
+              style=${{ whiteSpace: 'pre-line' }}
+              className=${`max-w-[88%] p-4 rounded-2xl text-[13px] shadow-sm ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}
+            >
                ${m.text}
             </div>
           </div>
@@ -157,7 +158,7 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
             className="flex-1 bg-transparent text-[13px] px-3 py-2.5 outline-none"
             disabled=${isTyping}
           />
-          <button onClick=${() => onSend()} disabled=${isTyping || !input.trim()} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-30 transition-all shadow-lg shadow-blue-900/10">
+          <button onClick=${() => onSend()} disabled=${isTyping || !input.trim()} className="bg-[#1e3a8a] text-white w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-30 transition-all">
             <i className="fas fa-paper-plane text-[10px]"></i>
           </button>
         </div>

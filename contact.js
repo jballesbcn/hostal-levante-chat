@@ -4,6 +4,18 @@ import htm from 'htm';
 
 const html = htm.bind(React.createElement);
 
+// Mapeo preciso de páginas de inicio según estructura del servidor
+const HOME_URLS = {
+  es: "https://www.hostallevante.com/es/index.html",
+  en: "https://www.hostallevante.com/en/home.html",
+  ca: "https://www.hostallevante.com/ca/home-ca.html",
+  fr: "https://www.hostallevante.com/fr/home-fr.html",
+  it: "https://www.hostallevante.com/it/home-it.html",
+  de: "https://www.hostallevante.com/de/home-de.html",
+  nl: "https://www.hostallevante.com/nl/home-nl.html",
+  pt: "https://www.hostallevante.com/pt/home-pt.html"
+};
+
 const TEXTS = {
   es: { 
     title: "Contacto", subtitle: "Responderemos a tu consulta lo antes posible.",
@@ -21,9 +33,9 @@ const TEXTS = {
   },
   it: { title: "Contatto", subtitle: "Risponderemo alla tua richiesta il prima possibile.", name: "Nome", email: "Email", whatsapp: "WhatsApp", optional: "(opzionale)", message: "Messaggio", captcha: "Non sono un robot", send: "Invia Messaggio", sending: "Invio...", success: "Messaggio inviato con successo!", redirect: "Reindirizzamento alla home page tra", error: "Errore durante l'invio." },
   de: { title: "Kontakt", subtitle: "Wir werden Ihre Anfrage so schnell wie möglich beantworten.", name: "Name", email: "Email", whatsapp: "WhatsApp", optional: "(optional)", message: "Nachricht", captcha: "Ich bin kein Roboter", send: "Nachricht Senden", sending: "Wird gesendet...", success: "Nachricht erfolgreich gesendet!", redirect: "Weiterleitung zur Startseite in", error: "Fehler beim Senden." },
-  fr: { title: "Contact", subtitle: "Nous répondrons a votre demande dans les plus brefs délais.", name: "Nom", email: "Email", whatsapp: "WhatsApp", optional: "(optionnel)", message: "Message", captcha: "Je ne suis pas un robot", send: "Envoyer Message", sending: "Envoi...", success: "Message envoyé avec succès !", redirect: "Redirection vers l'accueil dans", error: "Erreur lors de l'envoi." },
+  fr: { title: "Contact", subtitle: "Nous répondrons a votre demanda dans les plus brefs délais.", name: "Nom", email: "Email", whatsapp: "WhatsApp", optional: "(optionnel)", message: "Message", captcha: "Je ne suis pas un robot", send: "Envoyer Message", sending: "Envoi...", success: "Message envoyé avec succès !", redirect: "Redirection vers l'accueil dans", error: "Erreur lors de l'envoi." },
   nl: { title: "Contact", subtitle: "Wij zullen uw aanvraag zo snel mogelijk beantwoorden.", name: "Naam", email: "Email", whatsapp: "WhatsApp", optional: "(optioneel)", message: "Bericht", captcha: "Ik bin geen robot", send: "Bericht Verzenden", sending: "Verzenden...", success: "Bericht succesvol verzonden!", redirect: "Doorsturen naar home in", error: "Fout bij verzenden." },
-  pt: { title: "Contato", subtitle: "Responderemos à sua dúvida o más breve posible.", name: "Nome", email: "Email", whatsapp: "WhatsApp", optional: "(opcional)", message: "Mensagem", captcha: "Não sou um robô", send: "Enviar Mensagem", sending: "Enviando...", success: "Mensagem enviada com sucesso!", redirect: "Redirecionando para o início em", error: "Erro ao enviar a mensagem." },
+  pt: { title: "Contato", subtitle: "Responderemos à sua duda o más breve posible.", name: "Nome", email: "Email", whatsapp: "WhatsApp", optional: "(opcional)", message: "Mensagem", captcha: "Não sou um robô", send: "Enviar Mensagem", sending: "Enviando...", success: "Mensagem enviada con sucesso!", redirect: "Redirecionando para o início em", error: "Erro ao enviar a mensaje." },
   ca: { title: "Contacte", subtitle: "Respondrem a la teva consulta el més aviat possible.", name: "Nom", email: "Email", whatsapp: "WhatsApp", optional: "(opcional)", message: "Missatge", captcha: "No soc un robot", send: "Enviar Missatge", sending: "Enviant...", success: "Missatge enviat amb èxit!", redirect: "Redirigint a la pàgina d'inici en", error: "Error en enviar el missatge." }
 };
 
@@ -41,10 +53,11 @@ export const ContactForm = ({ forcedLang }) => {
     if (countdown !== null && countdown > 0) {
       timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
     } else if (countdown === 0) {
-      window.top.location.href = 'https://www.hostallevante.com/index.html';
+      const redirectUrl = HOME_URLS[lang] || HOME_URLS.es;
+      window.top.location.href = redirectUrl;
     }
     return () => clearTimeout(timer);
-  }, [countdown]);
+  }, [countdown, lang]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
