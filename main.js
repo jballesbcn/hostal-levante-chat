@@ -7,30 +7,24 @@ import { ContactForm } from './contact.js';
 
 const html = htm.bind(React.createElement);
 
-// Detección de idioma para Hostal Levante (Ultra-precisa)
 const detectLanguage = () => {
   const validLangs = ['es', 'en', 'ca', 'fr', 'it', 'de', 'nl', 'pt'];
-  
-  // 1. Prioridad Máxima: Parámetro explícito en la URL del iframe (?lang=en)
   const urlParams = new URLSearchParams(window.location.search);
   let lang = urlParams.get('lang');
   if (lang && validLangs.includes(lang.toLowerCase())) return lang.toLowerCase();
   
-  // 2. Prioridad: Ruta en el Referrer (URL de la web padre)
   const referrer = document.referrer;
   if (referrer) {
     const lowerReferrer = referrer.toLowerCase();
     for (const l of validLangs) {
-      // Busca patrones como hostallevante.com/en/ o /ca/home.html
       if (lowerReferrer.includes(`/${l}/`)) return l;
     }
   }
   
-  // 3. Prioridad: Idioma del navegador
   const navLang = navigator.language.split('-')[0];
   if (validLangs.includes(navLang)) return navLang;
   
-  return 'es'; // Idioma base
+  return 'es';
 };
 
 const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
@@ -67,6 +61,13 @@ const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
             <div className="flex gap-3">
                 <button onClick=${() => navigate('contact')} className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
                     <i className="fas fa-envelope mr-2"></i> Probar Contacto
+                </button>
+                <button onClick=${() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('view');
+                    window.location.href = url.toString();
+                }} className="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-black transition-colors">
+                    <i className="fas fa-comment mr-2"></i> Ver Chat
                 </button>
             </div>
         </div>
@@ -112,12 +113,6 @@ const AdminPanel = ({ knowledge, onAdd, onDelete }) => {
           </div>
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-12 relative h-[650px] border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-2xl bg-white">
-            <${ChatWidget} knowledge=${knowledge} isEmbedded=${true} forcedLang=${detectLanguage()} />
-        </div>
-      </div>
     </div>
   `;
 };
@@ -134,7 +129,6 @@ const App = () => {
 
   const [lang, setLang] = useState(detectLanguage());
 
-  // Escuchar cambios en la URL (si el padre cambia el idioma dinámicamente)
   useEffect(() => {
     const handleUrlChange = () => setLang(detectLanguage());
     window.addEventListener('popstate', handleUrlChange);
@@ -150,12 +144,15 @@ const App = () => {
   
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
-  const isEmbed = params.get('embed') === 'true';
-
-  if (view === 'contact') return html`<${ContactForm} forcedLang=${lang} />`;
-  if (isEmbed) return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} forcedLang=${lang} />`;
   
-  return html`<${AdminPanel} knowledge=${knowledge} onAdd=${addKnowledge} onDelete=${deleteKnowledge} />`;
+  // 1. Si es contacto, mostrar formulario
+  if (view === 'contact') return html`<${ContactForm} forcedLang=${lang} />`;
+  
+  // 2. Si es admin, mostrar panel (Acceso solo vía ?view=admin)
+  if (view === 'admin') return html`<${AdminPanel} knowledge=${knowledge} onAdd=${addKnowledge} onDelete=${deleteKnowledge} />`;
+  
+  // 3. Por DEFECTO siempre el Chat (evita que aparezca la línea de configuración en la web)
+  return html`<${ChatWidget} knowledge=${knowledge} isEmbedded=${true} forcedLang=${lang} />`;
 };
 
 createRoot(document.getElementById('root')).render(html`<${App} />`);

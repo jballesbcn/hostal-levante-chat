@@ -5,12 +5,11 @@ import { GoogleGenAI } from "@google/genai";
 
 const html = htm.bind(React.createElement);
 
-// Traducciones para la interfaz (Botones y etiquetas)
 const UI_TEXT = {
   es: { book: "Reserva", write: "Escribe tu duda...", greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", error: "Lo siento, mi conexión ha fallado un momento." },
   en: { book: "Book Now", write: "Type your question...", greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", error: "I'm sorry, I lost my connection for a second." },
   it: { book: "Prenota", write: "Scrivi la tua domanda...", greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicaciones?", error: "Scusa, la mia connessione si è interrotta per un momento." },
-  de: { book: "Buchen", write: "Schreiben Sie Ihre Frage...", greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer oder brauchen Sie Hilfe?", error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen." },
+  de: { book: "Buchen", write: "Schreiben Sie Ihre Frage...", greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer o brauchen Sie Hilfe?", error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen." },
   fr: { book: "Réserver", write: "Écrivez votre question...", greeting: "Bonjour ! Je suis votre Concierge à l'Hostal Levante. Vous cherchez une chambre ou des indications ?", error: "Désolé, j'ai perdu ma conexión pendant un moment." },
   nl: { book: "Boeken", write: "Typ je vraag...", greeting: "Hallo! I ben je conciërge bij Hostal Levante. Zoek je een kamer of heb je hulp nodig?", error: "Sorry, ik ben de verbinding even kwijt." },
   pt: { book: "Reservar", write: "Digite sua duda...", greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto o precisa de ajuda?", error: "Desculpe, perdi minha conexión por un momento." },
@@ -26,11 +25,9 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef(null);
   
-  // Sincronizar el idioma forzado con el estado local
   const lang = forcedLang || 'es';
   const t = UI_TEXT[lang] || UI_TEXT.es;
 
-  // Reiniciar mensajes cuando cambie el idioma
   useEffect(() => {
     setMessages([{ role: 'model', text: t.greeting }]);
   }, [lang]);
@@ -62,7 +59,7 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const kbContent = (knowledge || []).map(k => `${k.title}: ${k.content}`).join('\n');
       
-      const response = await ai.models.generateContent({
+      const responseStream = await ai.models.generateContentStream({
         model: 'gemini-3-flash-preview',
         contents: textToSend,
         config: { 
@@ -74,18 +71,34 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
             2. Be professional, warm, and brief.
             
             FORMATTING RULES:
-            - Use a SINGLE newline (\\n) between sentences or ideas to maintain list structure.
+            - Use a SINGLE newline (\\n) between sentences.
             - NEVER use double newlines (\\n\\n).
             - Use "•" for list items. Each bullet point MUST be on a new line.
-            - NO asterisks (*). No bolding with stars.
+            - NO asterisks (*). No bolding.
             
             KNOWLEDGE BASE:
             ${kbContent}`
         }
       });
 
-      const text = response.text?.replace(/\*/g, '') || t.error;
-      setMessages(prev => [...prev, { role: 'model', text }]);
+      // Añadimos el mensaje del modelo vacío para ir llenándolo
+      setMessages(prev => [...prev, { role: 'model', text: '' }]);
+      
+      let fullResponseText = '';
+      for await (const chunk of responseStream) {
+        const chunkText = chunk.text || '';
+        fullResponseText += chunkText;
+        
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg.role === 'model') {
+            lastMsg.text = fullResponseText.replace(/\*/g, '');
+          }
+          return newMessages;
+        });
+      }
+
     } catch (err) {
       console.error(err);
       setMessages(prev => [...prev, { role: 'model', text: t.error }]);
@@ -100,7 +113,7 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
   };
 
   if (!isOpen && isEmbedded) return html`
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full h-full flex items-center justify-center bg-transparent">
       <button onClick=${() => toggleChat(true)} className="w-16 h-16 bg-[#1e3a8a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all border-4 border-white shadow-blue-900/30">
         <i className="fas fa-concierge-bell text-2xl"></i>
       </button>
@@ -136,12 +149,12 @@ export const ChatWidget = ({ knowledge, isEmbedded, forcedLang }) => {
               style=${{ whiteSpace: 'pre-line' }}
               className=${`max-w-[88%] p-4 rounded-2xl text-[13px] shadow-sm ${m.role === 'user' ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-blue-900/10' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'}`}
             >
-               ${m.text}
+               ${m.text || (m.role === 'model' && i === messages.length - 1 ? '...' : '')}
             </div>
           </div>
         `)}
         
-        ${isTyping && html`
+        ${isTyping && messages[messages.length - 1].text === '' && html`
           <div className="flex gap-1.5 p-3.5 bg-white rounded-2xl border border-slate-100 w-fit ml-2 animate-pulse">
             <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce"></div>
             <div className="w-1.5 h-1.5 bg-[#1e3a8a] rounded-full animate-bounce [animation-delay:0.2s]"></div>
