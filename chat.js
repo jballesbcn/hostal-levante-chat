@@ -12,52 +12,44 @@ const UI_TEXT = {
     write: "Escribe tu duda...", 
     greeting: "¡Hola! Soy tu Concierge en Hostal Levante. ¿Buscas habitación o necesitas saber cómo llegar?", 
     error: "Lo siento, mi conexión ha fallado un momento.",
-    suggestions: ["¿Cómo llegar?", "Check-in 24h?", "¿Tienen Wifi?", "Qué ver cerca", "Reservar"]
-  },
+    },
   en: { 
     book: "Book Now", 
     contact: "Contact",
     write: "Type your question...", 
     greeting: "Hi! I'm your Concierge at Hostal Levante. Do you need a room or help with directions?", 
     error: "I'm sorry, I lost my connection for a second.",
-    suggestions: ["How to get here?", "24h Check-in?", "Free Wifi?", "Local tips", "Book"]
-  },
+    },
   it: { 
     book: "Prenota", contact: "Contatti", write: "Scrivi la tua domanda...", 
     greeting: "Ciao! Sono il tuo Concierge all'Hostal Levante. Cerchi una camera o hai bisogno di indicazioni?", 
     error: "Scusa, la mia connessione si è interrotta per un momento.",
-    suggestions: ["Come arrivare?", "Check-in 24h?", "C'è il Wifi?", "Prenota"]
-  },
+    },
   de: { 
     book: "Buchen", contact: "Kontakt", write: "Schreiben Sie Ihre Frage...", 
     greeting: "Hallo! Ich bin Ihr Concierge im Hostal Levante. Suchen Sie ein Zimmer oder brauchen Sie Hilfe?", 
     error: "Entschuldigung, meine Verbindung wurde kurz unterbrochen.",
-    suggestions: ["Anfahrt?", "24h Check-in?", "Gibt es Wifi?", "Buchen"]
-  },
+    },
   fr: { 
     book: "Réserver", contact: "Contact", write: "Écrivez votre question...", 
     greeting: "Bonjour ! Je suis votre Concierge à l'Hostal Levante. Vous cherchez une chambre ou des indications ?", 
     error: "Désolé, j'ai perdu ma connexion pendant un moment.",
-    suggestions: ["Comment venir ?", "Check-in 24h ?", "Y a-t-il du Wifi ?", "Réserver"]
-  },
+    },
   nl: { 
     book: "Boeken", contact: "Contact", write: "Typ je vraag...", 
     greeting: "Hallo! Ik ben je conciërge bij Hostal Levante. Zoek je een kamer of heb je hulp nodig?", 
     error: "Sorry, ik ben de verbinding even kwijt.",
-    suggestions: ["Hoe kom ik er?", "24u Check-in?", "Is er Wifi?", "Boeken"]
-  },
+    },
   pt: { 
     book: "Reservar", contact: "Contato", write: "Digite sua dúvida...", 
     greeting: "Olá! Sou o seu Concierge no Hostal Levante. Procura um quarto ou precisa de ajuda?", 
     error: "Desculpe, perdi minha conexão por um momento.",
-    suggestions: ["Como chegar?", "Check-in 24h?", "Tem Wifi?", "Reservar"]
-  },
+    },
   ca: { 
     book: "Reserva", contact: "Contacte", write: "Escriu el teu dubte...", 
     greeting: "Hola! Soc el teu Concierge a l'Hostal Levante. Busques habitació o necessites saber com arribar-hi?", 
     error: "Ho sento, la meva connexió ha fallat un moment.",
-    suggestions: ["Com arribar-hi?", "Check-in 24h?", "Teniu Wifi?", "Reserva"]
-  }
+    }
 };
 
 const BOOKING_URL = "https://booking.redforts.com/e4mh/";
@@ -135,7 +127,7 @@ export const ChatWidget = ({ knowledge, isEmbedded }) => {
             - Ayuda con info técnica y consejos locales.
             - Si no tenemos algo (TV, cocina), ofrece alternativas con empatía.
             - Accesibilidad: NO adaptado.
-            - Reservas: Botón "Reserva" arriba a la derecha.
+            - Reservas: Botón "Booking" arriba a la derecha.
             
             Información del Hostal:
             ${kbContent}`
